@@ -43,6 +43,13 @@ def comercial(dt):
     return dt.weekday() < 5 and HORA_ABRE <= dt.hour < HORA_FECHA
 
 
+def proxima_abertura(dt):
+    d = dt.date() if dt.hour < HORA_ABRE else dt.date() + timedelta(days=1)
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    return datetime.combine(d, time(HORA_ABRE, 0), TZ)
+
+
 def classificar(it):
     if it.get("eventType") != "message":
         return "sistema"
@@ -126,9 +133,11 @@ def main():
         if prim_cli:
             t0 = datetime.fromisoformat(prim_cli["t"])
             dentro = comercial(t0)
+            if not dentro:
+                t0 = proxima_abertura(t0)
             resp = next((m for m in janela if m["quem"] == "humano" and m["t"] > prim_cli["t"]), None)
             if resp:
-                resp_min = round((datetime.fromisoformat(resp["t"]) - t0).total_seconds() / 60, 1)
+                resp_min = round(max(0, (datetime.fromisoformat(resp["t"]) - t0).total_seconds()) / 60, 1)
         ops = {}
         for m in janela:
             if m["quem"] == "humano":

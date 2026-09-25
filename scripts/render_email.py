@@ -58,6 +58,15 @@ def link(url):
     return f' <a href="{url}" style="color:{LARANJA}">abrir</a>' if url else ""
 
 
+def cabecalho(cols):
+    return "<tr>" + "".join(f'<td bgcolor="{MARROM}" style="background:{MARROM};color:#ffffff;font-weight:bold"{a}>{c}</td>' for c, a in cols) + "</tr>"
+
+
+def ordem_atendentes(nomes):
+    prioridade = ["hellen", "barbara"]
+    return sorted(nomes, key=lambda n: (next((i for i, p in enumerate(prioridade) if n.lower().startswith(p)), 99), n))
+
+
 def h2(t):
     return f'<h2 style="color:{MARROM};font-size:17px;margin:24px 0 8px">{t}</h2>'
 
@@ -80,7 +89,7 @@ def main():
         c["av"] = ava["conversas"][c["fone"]]
         c["nota"] = nota(c["av"])
         c["rot"] = f"{escape(c['nome'])} ••{c['final']}"
-    atendentes = sorted({c["atendente"] for c in convs if c["atendente"]})
+    atendentes = ordem_atendentes({c["atendente"] for c in convs if c["atendente"]})
     por_fone = {c["fone"]: c for c in convs}
 
     def media_letra(lista, k):
@@ -153,8 +162,8 @@ def main():
 
     H.append(h2("Nota AROMA por letra"))
     colunas = [("Consolidado", convs)] + [(a.split()[0], [c for c in convs if c["atendente"] == a]) for a in atendentes]
-    H.append(f'<table cellpadding="5" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:13px">'
-             f'<tr style="background:{MARROM};color:#fff"><td>Letra</td>' + "".join(f"<td>{n}</td>" for n, _ in colunas) + "</tr>")
+    H.append(f'<table cellpadding="5" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:13px">' +
+             cabecalho([("Letra", "")] + [(n, "") for n, _ in colunas]))
     for i, (k, nome) in enumerate(LETRAS + [("_", "Nota geral")]):
         fundo = CREME if i % 2 == 0 else "#fff"
         linha = f'<tr style="background:{fundo}"><td width="120"><b>{nome}</b></td>'
@@ -182,17 +191,25 @@ def main():
                  f'{ok5} de {len(tempos)} dentro da meta. Só leads novos cuja 1ª mensagem chegou em horário comercial.</p>')
 
     H.append(h2("Todas as conversas avaliadas"))
-    H.append(f'<table cellpadding="4" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:12px"><tr style="background:{MARROM};color:#fff">'
-             '<td>Cliente</td><td>Atendente</td><td align="right">1ª resp.</td><td align="right">Nota</td><td></td></tr>')
-    curta = False
+    H.append('<table cellpadding="4" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:12px">' +
+             cabecalho([("Cliente", ""), ("Atendente", ""), ("1ª resposta (min)", ' align="right"'), ("Nota AROMA (0–100)", ' align="right"'), ("Conversa", "")]))
+    curta = fora = False
     for i, c in enumerate(sorted(convs, key=lambda c: -(c["nota"] or -1))):
         n_let = sum(1 for k, _ in LETRAS if c["av"].get(k) is not None)
         marca = "*" if n_let <= 1 else ""
         curta |= bool(marca)
         fundo = CREME if i % 2 else "#fff"
+        tr = "—"
+        if c["lead_novo"] and c["resp_min"] is not None:
+            tr = fmt(c["resp_min"]) + ("†" if not c["cliente_em_horario"] else "")
+            fora |= not c["cliente_em_horario"]
         H.append(f'<tr style="background:{fundo}"><td>{c["rot"]}</td><td>{escape((c["atendente"] or "—").split()[0])}</td>'
-                 f'<td align="right">{fmt(c["resp_min"]) if c["lead_novo"] else "—"}</td><td align="right">{fmt(c["nota"], 0)}{marca}</td><td>{link(c["link"])}</td></tr>')
+                 f'<td align="right">{tr}</td><td align="right">{fmt(c["nota"], 0)}{marca}</td><td>{link(c["link"])}</td></tr>')
     H.append("</table>")
+    H.append(f'<p style="font-size:11px;color:{CINZA};margin:4px 0 0"><b>1ª resposta (min):</b> minutos entre a primeira mensagem do cliente e a primeira resposta humana do time. Só aparece para leads novos (meta: até 5 min); "—" = conversa já em andamento. '
+             '<b>Nota AROMA:</b> nota da conversa de 0 a 100, média das letras do AROMA que se aplicaram.</p>')
+    if fora:
+        H.append(f'<p style="font-size:11px;color:{CINZA};margin:2px 0 0">† Cliente escreveu fora do horário comercial: o tempo conta a partir da abertura do expediente seguinte (9h) e fica fora da meta de 5 min.</p>')
     if curta:
         H.append(f'<p style="font-size:11px;color:{CINZA};margin:4px 0 0">* Conversa curta, com só uma letra avaliável. Leia como sinal, não como veredito.</p>')
 
