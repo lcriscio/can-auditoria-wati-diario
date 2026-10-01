@@ -17,6 +17,8 @@ FUNDO, PAPEL, AREIA = "#f1dfcb", "#fbf1e4", "#f3dcc0"
 LARANJA, TERRACOTA, MARROM, TEXTO, SUAVE = "#b3470d", "#9a3412", "#4a2c17", "#3b2a1e", "#7d6552"
 PESSEGO, MOSTARDA, ARGILA = "#f9d4b4", "#f3dfa6", "#e9c9b3"
 T = 'role="presentation" cellpadding="0" cellspacing="0" border="0"'
+# atributos em constantes: Python < 3.12 não aceita aspas iguais às da f-string dentro de {}
+AC, W6, SELO, TILE = 'align="center"', 'width="6"', 'align="center" width="1"', 'align="center" width="31%"'
 
 
 def e(s):
@@ -55,16 +57,16 @@ def card(it, cor, agora):
     if it.get("link"):
         url = e(it["link"])
         nome = f'<a href="{url}" style="color:{TEXTO};text-decoration:underline;">{nome}</a>'
-        botao = (f'<table {T} style="margin-top:14px;"><tr>{td(cor, "border-radius:6px;padding:11px 20px;", "align=center")}'
+        botao = (f'<table {T} style="margin-top:14px;"><tr>{td(cor, "border-radius:6px;padding:11px 20px;", AC)}'
                  f'<a href="{url}" target="_blank" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">'
                  f'Abrir conversa no WATI &rarr;</a></td></tr></table>')
     return f'''<tr>{td(PAPEL, "padding:8px 24px;")}
 <table {T} width="100%"><tr>
-{td(cor, "width:6px;font-size:1px;", 'width="6"')}&nbsp;</td>
+{td(cor, "width:6px;font-size:1px;", W6)}&nbsp;</td>
 {td("#fffaf3", f"padding:16px 18px;border:1px solid {ARGILA};border-left:0;")}
 <table {T} width="100%"><tr>
 <td style="font-size:17px;font-weight:bold;color:{TEXTO};">{nome} <span style="font-weight:normal;color:{SUAVE};font-size:13px;">· {e(fone_fmt(it["fone"]))}</span></td>
-{td(PESSEGO, f"padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;color:{TERRACOTA};white-space:nowrap;", 'align="center" width="1"')}⏳ {espera(it["aguardando_desde"], agora)}</td>
+{td(PESSEGO, f"padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;color:{TERRACOTA};white-space:nowrap;", SELO)}⏳ {espera(it["aguardando_desde"], agora)}</td>
 </tr></table>
 <div style="font-size:13px;color:{SUAVE};padding-top:6px;">Atendente: <b style="color:{TEXTO};">{e(it["atendente"] or "Sem atendente definido")}</b> · aguardando desde {quando(it["aguardando_desde"])}{extra}</div>
 <table {T} width="100%" style="margin-top:10px;"><tr>{td(AREIA, f"padding:10px 12px;border-radius:6px;font-size:13px;line-height:19px;color:{TEXTO};")}<b>O que aconteceu:</b> {e(it["resumo"])}</td></tr></table>
@@ -120,11 +122,11 @@ def main():
              f'<tr><td style="height:14px;font-size:1px;">&nbsp;</td></tr>') if teste else ""
 
     def tile(cor, numero, legenda, cor_num):
-        return (f'{td(cor, "padding:14px 8px;border-radius:10px;", 'align="center" width="31%"')}'
+        return (f'{td(cor, "padding:14px 8px;border-radius:10px;", TILE)}'
                 f'<div style="font-size:30px;font-weight:bold;color:{cor_num};">{numero}</div>'
                 f'<div style="font-size:12px;color:{TEXTO};">{legenda}</div></td>')
 
-    corpo = f'''<table {T} width="100%" bgcolor="{FUNDO}" style="background-color:{FUNDO};font-family:Helvetica,Arial,sans-serif;color:{TEXTO};"><tr>{td(FUNDO, "padding:24px 12px;", 'align="center"')}
+    corpo = f'''<table {T} width="100%" bgcolor="{FUNDO}" style="background-color:{FUNDO};font-family:Helvetica,Arial,sans-serif;color:{TEXTO};"><tr>{td(FUNDO, "padding:24px 12px;", AC)}
 <table {T} width="640" style="max-width:640px;width:100%;">
 {faixa}
 <tr>{td(TERRACOTA, "border-radius:14px 14px 0 0;padding:26px 28px;")}
@@ -138,7 +140,7 @@ def main():
 <td width="3.5%">&nbsp;</td>
 {tile(MOSTARDA, len(b2), "sem resposta", LARANJA)}
 <td width="3.5%">&nbsp;</td>
-{td(ARGILA, "padding:14px 8px;border-radius:10px;", 'align="center" width="31%"')}<div style="font-size:13px;line-height:20px;color:{TEXTO};">{at_html}</div><div style="font-size:12px;color:{TEXTO};">por atendente</div></td>
+{td(ARGILA, "padding:14px 8px;border-radius:10px;", TILE)}<div style="font-size:13px;line-height:20px;color:{TEXTO};">{at_html}</div><div style="font-size:12px;color:{TEXTO};">por atendente</div></td>
 </tr></table>
 </td></tr>
 {bloco("Bloco 1 · A de Acolher", "Chegaram e ainda não receberam boas-vindas", "Meta do método: 1ª resposta em até 5 min no horário comercial.", b1, TERRACOTA, agora)}
