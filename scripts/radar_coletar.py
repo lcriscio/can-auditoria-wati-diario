@@ -17,7 +17,7 @@ BASE = "https://live-mt-server.wati.io/389231/api/v1"
 INBOX = "https://live.wati.io/389231/teamInbox"
 HORA_ABRE, HORA_FECHA = 9, 18
 HORA_PRIMEIRO_EMAIL = 8
-TOLERANCIA_MIN = 15  # mensagem em horário comercial só entra depois desse tempo sem resposta
+TOLERANCIA_MIN = 30  # só entra no alerta quem espera há pelo menos esse tempo
 SAIDA = os.path.join("data", "radar")
 
 
@@ -67,7 +67,7 @@ def elegivel_em(t):
     d = t.date() if (dia_util(t.date()) and t.hour < HORA_ABRE) else t.date() + timedelta(days=1)
     while not dia_util(d):
         d += timedelta(days=1)
-    return datetime.combine(d, time(HORA_PRIMEIRO_EMAIL, 0), TZ)
+    return max(datetime.combine(d, time(HORA_PRIMEIRO_EMAIL, 0), TZ), t + timedelta(minutes=TOLERANCIA_MIN))
 
 
 def rot(m):
