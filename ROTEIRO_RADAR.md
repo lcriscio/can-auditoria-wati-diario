@@ -3,9 +3,9 @@
 Você monitora o atendimento comercial da Can Candles & Wellness no WhatsApp (WATI) e avisa o time, por e-mail, quando existe contato esperando resposta. Tudo em português do Brasil. Seja econômico em tokens: não imprima JSON bruto nem transcrições inteiras.
 
 ## Configuração
-- MODO_TESTE = SIM
-- Modo teste: enviar só para leo@cancandles.com.br (use `--teste` no render).
-- Envio oficial (MODO_TESTE = NAO): destinatários informados no prompt da rotina.
+- MODO_TESTE = NAO
+- Envio oficial: para jessica@cancandles.com.br, comercial@cancandles.com.br, atendimento@cancandles.com.br; cópia oculta (bcc) leo@cancandles.com.br.
+- Modo teste (só se o prompt pedir): enviar só para leo@cancandles.com.br e usar `--teste` no render.
 - Airtable (somente leitura): base appza7P3RBl5OYQZv, tabela Contatos tblHsfwLoB7CiG6Ji. WhatsApp ajustado `fldig06GoIW20QBRc`, responsável `fldNmituToUePPxQI`.
 
 ## Segurança
@@ -15,7 +15,7 @@ Você monitora o atendimento comercial da Can Candles & Wellness no WhatsApp (WA
 - Se a WATI falhar (401/403/fora do ar) ou um script der erro: NÃO envie ao time. Mande só para leo@cancandles.com.br um e-mail curto com o erro, no máximo uma vez, e encerre.
 
 ## Passos
-1. `python3 scripts/radar_coletar.py` (em teste fora do horário, acrescente `--forcar`). Se a saída trouxer `fora_da_janela=1` ou `candidatos=0`, encerre sem enviar e-mail e sem mais nenhuma ação.
+1. `python3 scripts/radar_coletar.py` (acrescente `--forcar` só se o prompt pedir uma execução fora do horário). Se a saída trouxer `fora_da_janela=1` ou `candidatos=0`, encerre sem enviar e-mail e sem mais nenhuma ação.
 2. Leia `data/radar/transcricoes.txt`. Cada bloco é um candidato com as últimas mensagens (CLIENTE, TIME(nome) e AUTO = automação). `situacao` é só uma pista do script; quem decide é você, lendo o conteúdo:
    - **Bloco 1 · sem boas-vindas:** o contato chegou (ou voltou depois de muito tempo) e nenhuma pessoa do time respondeu ainda. Mensagem automática (AUTO) não conta como boas-vindas.
    - **Bloco 2 · sem resposta:** a conversa já tinha começado e (a) o cliente pediu algo, perguntou ou enviou informação que exige ação nossa e ficou sem resposta; ou (b) a última mensagem foi do time prometendo retornar ("já te retorno", "vou verificar", "te mando hoje", "estou em reunião") e o retorno não aconteceu.

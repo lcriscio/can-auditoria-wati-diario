@@ -59,9 +59,9 @@ def dia_util_anterior(d):
     return d
 
 
-def elegivel_em(t):
+def elegivel_em(t, forcar=False):
     """Momento a partir do qual a mensagem do cliente pode entrar no alerta."""
-    if dia_util(t.date()) and HORA_ABRE <= t.hour < HORA_FECHA:
+    if forcar or (dia_util(t.date()) and HORA_ABRE <= t.hour < HORA_FECHA):
         return t + timedelta(minutes=TOLERANCIA_MIN)
     # fora do horário: entra no primeiro e-mail (8h) do próximo dia útil
     d = t.date() if (dia_util(t.date()) and t.hour < HORA_ABRE) else t.date() + timedelta(days=1)
@@ -134,7 +134,7 @@ def main():
         if ult["quem"] == "cliente":
             # primeira mensagem do cliente que ficou sem resposta humana
             desde = next(m for m in clientes if not ult_hum or m["t"] > ult_hum["t"])
-            if desde["t"] < ini or elegivel_em(desde["t"]) > agora:
+            if desde["t"] < ini or elegivel_em(desde["t"], args.forcar) > agora:
                 continue
             sem_humano_recente = not ult_hum or (desde["t"] - ult_hum["t"]) > timedelta(days=30)
             situacao = "sem_boas_vindas" if sem_humano_recente else "cliente_sem_resposta"
