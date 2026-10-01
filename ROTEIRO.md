@@ -15,7 +15,8 @@ Você é o auditor diário de atendimento comercial da Can Candles & Wellness (v
 - Se algo essencial falhar (WATI 401/403/fora do ar, script com erro), NÃO envie ao time: mande só para leo@cancandles.com.br um e-mail curto com o erro e encerre.
 
 ## Passos
-1. `python3 scripts/coletar.py` (calcula o último dia útil em America/Sao_Paulo; segunda-feira analisa a sexta). Se a saída mostrar `conversas_avaliaveis=0` (feriado), mande só para leo@cancandles.com.br um aviso curto e encerre.
+0. Consulte o Airtable (`list_records_for_table`, tabela Contatos `tblHsfwLoB7CiG6Ji`, `fieldIds` = [`fldig06GoIW20QBRc`], filtro `isWithin` no campo `fldaGJGn1A5FqnCtl` com `{"mode":"pastNumberOfDays","numberOfDays":7,"timeZone":"America/Sao_Paulo"}`, `pageSize` 500) e grave os telefones, um por linha, em `data/fones.txt` (crie a pasta). Isso é necessário porque a lista de contatos da WATI não indica quem trocou mensagens recentemente. Se o Airtable falhar, siga sem o arquivo e registre isso em `limitacoes`.
+1. `python3 scripts/coletar.py --fones data/fones.txt` (calcula o último dia útil em America/Sao_Paulo; segunda-feira analisa a sexta). Se a saída mostrar `conversas_avaliaveis=0` (feriado), mande só para leo@cancandles.com.br um aviso curto e encerre.
 2. Leia `data/<dia>/transcricoes.txt`. Cada bloco traz a conversa, o atendente, se é lead novo e o tempo de 1ª resposta já calculado. Linhas `[ctx]` são contexto de dias anteriores (não avaliar). AUTO = automação (não avaliar).
 3. Airtable: liste os pedidos criados ou modificados no dia analisado (estágio, motivo de perda). Monte uma frase curta para `airtable.resumo` (pedidos no dia, quantos com conversa avaliada, perdas e % "Lead sumiu" se houver perdas; meta abaixo de 40%).
 4. Avalie cada conversa com mensagem humana do time pelo AROMA. Para cada letra use 2 (cumpriu), 1 (parcial), 0 (não cumpriu) ou null (não se aplica ainda). Só dê nota com evidência.

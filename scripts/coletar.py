@@ -64,6 +64,7 @@ def classificar(it):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data")
+    ap.add_argument("--fones", help="arquivo com telefones extras (um por linha), vindos do Airtable")
     args = ap.parse_args()
     hoje = datetime.now(TZ).date()
     dia = date.fromisoformat(args.data) if args.data else ultimo_dia_util(hoje)
@@ -86,6 +87,20 @@ def main():
         lu = c.get("lastUpdated")
         if lu and datetime.fromisoformat(lu.replace("Z", "+00:00")).astimezone(TZ) >= min(ini, corte):
             candidatos.append(c)
+
+    # o lastUpdated da WATI não acompanha as mensagens: completa com os telefones
+    # que o Airtable registrou com mensagem recebida nos últimos dias
+    so_digitos = lambda x: "".join(ch for ch in str(x or "") if ch.isdigit())
+    extras = 0
+    if args.fones and os.path.exists(args.fones):
+        vistos = {so_digitos(c.get("phone") or c.get("wAid")) for c in candidatos}
+        por_fone = {so_digitos(c.get("phone") or c.get("wAid")): c for c in contatos}
+        for linha in open(args.fones):
+            f = so_digitos(linha)
+            if len(f) >= 10 and f not in vistos:
+                vistos.add(f)
+                candidatos.append(por_fone.get(f) or {"phone": f})
+                extras += 1
 
     conversas, fds_sem_resposta, volume_auto = [], 0, 0
     for c in candidatos:
@@ -171,7 +186,7 @@ def main():
                 f.write(f"[ctx {m['t'][5:10]} {m['t'][11:16]}] {rot(m)}\n")
             for m in cv["janela"]:
                 f.write(f"{m['t'][11:16]} {rot(m)}\n")
-    print(f"dia={dia} contatos_ativos={len(candidatos)} conversas_avaliaveis={len(conversas)} -> {saida}")
+    print(f"dia={dia} contatos_ativos={len(candidatos)} (extras_airtable={extras}) conversas_avaliaveis={len(conversas)} -> {saida}")
 
 
 def rot(m):
