@@ -80,6 +80,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--agora")
     ap.add_argument("--forcar", action="store_true", help="roda mesmo fora da janela 8h-18h (para testes)")
+    ap.add_argument("--fones", help="arquivo com telefones extras (um por linha), vindos do Airtable")
     args = ap.parse_args()
     agora = datetime.fromisoformat(args.agora).replace(tzinfo=TZ) if args.agora else datetime.now(TZ)
 
@@ -101,11 +102,24 @@ def main():
             break
         pagina += 1
 
-    ativos = []
+    so_digitos = lambda x: "".join(ch for ch in str(x or "") if ch.isdigit())
+    ativos, vistos = [], set()
     for c in contatos:
         lu = c.get("lastUpdated")
         if lu and datetime.fromisoformat(lu.replace("Z", "+00:00")).astimezone(TZ) >= ini:
             ativos.append(c)
+            vistos.add(so_digitos(c.get("phone") or c.get("wAid")))
+    # o lastUpdated da WATI não acompanha as mensagens: completa com os telefones
+    # que o Airtable registrou com mensagem recebida nos últimos dias
+    extras = 0
+    if args.fones and os.path.exists(args.fones):
+        por_fone = {so_digitos(c.get("phone") or c.get("wAid")): c for c in contatos}
+        for linha in open(args.fones):
+            f = so_digitos(linha)
+            if len(f) >= 10 and f not in vistos:
+                vistos.add(f)
+                ativos.append(por_fone.get(f) or {"phone": f})
+                extras += 1
 
     candidatos = []
     for c in ativos:
@@ -165,7 +179,8 @@ def main():
                     f"aguardando_desde={cv['aguardando_desde'][:16]} · fora_do_horario={cv['fora_do_horario']}\n")
             for m in cv["ultimas"]:
                 f.write(f"{m['t'][5:10]} {m['t'][11:16]} {m['linha']}\n")
-    print(f"agora={agora.isoformat()[:16]} contatos_ativos={len(ativos)} candidatos={len(candidatos)} -> {SAIDA}")
+    print(f"agora={agora.isoformat()[:16]} contatos_ativos={len(ativos)} (extras_airtable={extras}) "
+          f"candidatos={len(candidatos)} -> {SAIDA}")
 
 
 if __name__ == "__main__":
