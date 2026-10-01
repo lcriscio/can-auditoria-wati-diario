@@ -13,12 +13,12 @@ from datetime import datetime
 D = os.path.join("data", "radar")
 ASSUNTO = "⚠️ Atenção: existem contatos esperando nossa resposta"
 DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
-FUNDO, PAPEL, AREIA = "#f1dfcb", "#fbf1e4", "#f3dcc0"
-LARANJA, TERRACOTA, MARROM, TEXTO, SUAVE = "#b3470d", "#9a3412", "#4a2c17", "#3b2a1e", "#7d6552"
-PESSEGO, MOSTARDA, ARGILA = "#f9d4b4", "#f3dfa6", "#e9c9b3"
+BRANCO, CREME, LINHA = "#ffffff", "#fdf6ee", "#f0e2d3"
+LARANJA, TERRACOTA, TEXTO, SUAVE = "#c2571a", "#9a3412", "#3b2a1e", "#8a7565"
+PESSEGO, MOSTARDA = "#fdebdc", "#fbf3d9"
 T = 'role="presentation" cellpadding="0" cellspacing="0" border="0"'
 # atributos em constantes: Python < 3.12 não aceita aspas iguais às da f-string dentro de {}
-AC, W6, SELO, TILE = 'align="center"', 'width="6"', 'align="center" width="1"', 'align="center" width="31%"'
+AC, SELO, TILE = 'align="center"', 'align="right" width="1"', 'align="center" width="31%"'
 
 
 def e(s):
@@ -52,26 +52,21 @@ def espera(iso, agora):
 def card(it, cor, agora):
     extra = " (fora do horário)" if it["fora_do_horario"] else ""
     etapa = f" · {e(it['etapa'])}" if it.get("etapa") else ""
-    nome = e(it["nome"])
-    botao = ""
+    abrir = ""
     if it.get("link"):
         url = e(it["link"])
-        nome = f'<a href="{url}" style="color:{TEXTO};text-decoration:underline;">{nome}</a>'
-        botao = (f'<table {T} style="margin-top:14px;"><tr>{td(cor, "border-radius:6px;padding:11px 20px;", AC)}'
-                 f'<a href="{url}" target="_blank" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;">'
-                 f'Abrir conversa no WATI &rarr;</a></td></tr></table>')
-    return f'''<tr>{td(PAPEL, "padding:8px 24px;")}
+        abrir = (f' · <a href="{url}" target="_blank" style="color:{LARANJA};font-weight:normal;font-size:13px;'
+                 f'text-decoration:underline;white-space:nowrap;">abrir conversa no WATI &#8599;</a>')
+    return f'''<tr>{td(BRANCO, "padding:8px 28px;")}
 <table {T} width="100%"><tr>
-{td(cor, "width:6px;font-size:1px;", W6)}&nbsp;</td>
-{td("#fffaf3", f"padding:16px 18px;border:1px solid {ARGILA};border-left:0;")}
+{td(BRANCO, f"padding:16px 18px;border:1px solid {LINHA};border-left:3px solid {cor};border-radius:8px;")}
 <table {T} width="100%"><tr>
-<td style="font-size:17px;font-weight:bold;color:{TEXTO};">{nome} <span style="font-weight:normal;color:{SUAVE};font-size:13px;">· {e(fone_fmt(it["fone"]))}</span></td>
-{td(PESSEGO, f"padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold;color:{TERRACOTA};white-space:nowrap;", SELO)}⏳ {espera(it["aguardando_desde"], agora)}</td>
+<td style="font-size:16px;font-weight:bold;color:{TEXTO};">{e(it["nome"])} <span style="font-weight:normal;color:{SUAVE};font-size:13px;">· {e(fone_fmt(it["fone"]))}</span>{abrir}</td>
+{td(PESSEGO, f"padding:3px 10px;border-radius:12px;font-size:12px;color:{TERRACOTA};white-space:nowrap;", SELO)}⏳ {espera(it["aguardando_desde"], agora)}</td>
 </tr></table>
 <div style="font-size:13px;color:{SUAVE};padding-top:6px;">Atendente: <b style="color:{TEXTO};">{e(it["atendente"] or "Sem atendente definido")}</b> · aguardando desde {quando(it["aguardando_desde"])}{extra}</div>
-<table {T} width="100%" style="margin-top:10px;"><tr>{td(AREIA, f"padding:10px 12px;border-radius:6px;font-size:13px;line-height:19px;color:{TEXTO};")}<b>O que aconteceu:</b> {e(it["resumo"])}</td></tr></table>
-<table {T} width="100%" style="margin-top:8px;"><tr>{td(MOSTARDA, f"padding:10px 12px;border-radius:6px;font-size:13px;line-height:19px;color:{TEXTO};")}<b style="color:{TERRACOTA};">O que fazer{etapa}:</b> {e(it["recomendacao"])}</td></tr></table>
-{botao}
+<div style="font-size:13px;line-height:20px;color:{TEXTO};padding-top:10px;"><b>O que aconteceu:</b> {e(it["resumo"])}</div>
+<table {T} width="100%" style="margin-top:10px;"><tr>{td(CREME, f"padding:10px 12px;border-radius:6px;font-size:13px;line-height:20px;color:{TEXTO};")}<b style="color:{cor};">O que fazer{etapa}:</b> {e(it["recomendacao"])}</td></tr></table>
 </td></tr></table>
 </td></tr>'''
 
@@ -79,12 +74,10 @@ def card(it, cor, agora):
 def bloco(rotulo, titulo, sub, itens, cor, agora):
     if not itens:
         return ""
-    return f'''<tr>{td(PAPEL, "padding:22px 24px 6px 24px;")}
-<table {T} width="100%"><tr>{td(cor, "padding:12px 16px;border-radius:8px;")}
-<div style="font-size:11px;letter-spacing:1.5px;color:{PESSEGO};text-transform:uppercase;font-weight:bold;">{rotulo}</div>
-<div style="font-size:18px;font-weight:bold;color:#ffffff;padding-top:3px;">{titulo}</div>
-<div style="font-size:13px;color:#fbe9d7;padding-top:3px;">{sub}</div>
-</td></tr></table>
+    return f'''<tr>{td(BRANCO, "padding:26px 28px 6px 28px;")}
+<div style="font-size:11px;letter-spacing:1.5px;color:{cor};text-transform:uppercase;font-weight:bold;">{rotulo}</div>
+<div style="font-size:18px;font-weight:bold;color:{TEXTO};padding-top:3px;">{titulo}</div>
+<div style="font-size:13px;color:{SUAVE};padding-top:3px;">{sub}</div>
 </td></tr>''' + "".join(card(i, cor, agora) for i in itens)
 
 
@@ -117,38 +110,37 @@ def main():
     at_html = "<br>".join(f"<b>{e(k)}:</b> {v}" for k, v in sorted(por_at.items(), key=lambda x: -x[1]))
     n = len(itens)
     titulo = f"{n} contato esperando nossa resposta" if n == 1 else f"{n} contatos esperando nossa resposta"
-    faixa = (f'<tr>{td(MOSTARDA, "border:1px dashed #b98a1a;border-radius:10px;padding:10px 16px;font-size:13px;color:#6b5300;")}'
+    faixa = (f'<tr>{td(MOSTARDA, "border-radius:8px;padding:9px 16px;font-size:12px;color:#6b5300;")}'
              f'<b>TESTE.</b> Enviado só para o Leo, com conversas reais lidas no WATI.</td></tr>'
-             f'<tr><td style="height:14px;font-size:1px;">&nbsp;</td></tr>') if teste else ""
+             f'<tr><td style="height:12px;font-size:1px;">&nbsp;</td></tr>') if teste else ""
 
     def tile(cor, numero, legenda, cor_num):
-        return (f'{td(cor, "padding:14px 8px;border-radius:10px;", TILE)}'
-                f'<div style="font-size:30px;font-weight:bold;color:{cor_num};">{numero}</div>'
-                f'<div style="font-size:12px;color:{TEXTO};">{legenda}</div></td>')
+        return (f'{td(cor, "padding:12px 8px;border-radius:10px;", TILE)}'
+                f'<div style="font-size:26px;font-weight:bold;color:{cor_num};">{numero}</div>'
+                f'<div style="font-size:12px;color:{SUAVE};">{legenda}</div></td>')
 
-    corpo = f'''<table {T} width="100%" bgcolor="{FUNDO}" style="background-color:{FUNDO};font-family:Helvetica,Arial,sans-serif;color:{TEXTO};"><tr>{td(FUNDO, "padding:24px 12px;", AC)}
+    corpo = f'''<table {T} width="100%" bgcolor="{BRANCO}" style="background-color:{BRANCO};font-family:Helvetica,Arial,sans-serif;color:{TEXTO};"><tr>{td(BRANCO, "padding:20px 12px;", AC)}
 <table {T} width="640" style="max-width:640px;width:100%;">
 {faixa}
-<tr>{td(TERRACOTA, "border-radius:14px 14px 0 0;padding:26px 28px;")}
-<div style="font-size:12px;letter-spacing:2px;color:{PESSEGO};text-transform:uppercase;">Can Candles &amp; Wellness · Radar de atendimento</div>
-<div style="font-size:25px;line-height:31px;color:#ffffff;font-weight:bold;padding-top:8px;">⚠️ {titulo}</div>
-<div style="font-size:14px;color:#fbe9d7;padding-top:6px;">{DIAS[agora.weekday()]}, {agora:%d/%m} · {agora:%H:%M} · conversas desde {datetime.fromisoformat(coleta["desde"]):%d/%m}</div>
+<tr>{td(CREME, f"border-radius:12px 12px 0 0;border-bottom:2px solid {LARANJA};padding:24px 28px;")}
+<div style="font-size:11px;letter-spacing:2px;color:{LARANJA};text-transform:uppercase;">Can Candles &amp; Wellness · Radar de atendimento</div>
+<div style="font-size:23px;line-height:30px;color:{TEXTO};font-weight:bold;padding-top:8px;">{titulo}</div>
+<div style="font-size:13px;color:{SUAVE};padding-top:5px;">{DIAS[agora.weekday()]}, {agora:%d/%m} · {agora:%H:%M} · conversas desde {datetime.fromisoformat(coleta["desde"]):%d/%m}</div>
 </td></tr>
-<tr>{td(AREIA, "padding:18px 24px;")}
+<tr>{td(BRANCO, "padding:18px 28px 0 28px;")}
 <table {T} width="100%"><tr>
 {tile(PESSEGO, len(b1), "sem boas-vindas", TERRACOTA)}
 <td width="3.5%">&nbsp;</td>
 {tile(MOSTARDA, len(b2), "sem resposta", LARANJA)}
 <td width="3.5%">&nbsp;</td>
-{td(ARGILA, "padding:14px 8px;border-radius:10px;", TILE)}<div style="font-size:13px;line-height:20px;color:{TEXTO};">{at_html}</div><div style="font-size:12px;color:{TEXTO};">por atendente</div></td>
+{td(CREME, "padding:12px 8px;border-radius:10px;", TILE)}<div style="font-size:13px;line-height:19px;color:{TEXTO};">{at_html}</div><div style="font-size:12px;color:{SUAVE};">por atendente</div></td>
 </tr></table>
 </td></tr>
 {bloco("Bloco 1 · A de Acolher", "Chegaram e ainda não receberam boas-vindas", "Meta do método: 1ª resposta em até 5 min no horário comercial.", b1, TERRACOTA, agora)}
 {bloco("Bloco 2 · Conversas em aberto", "Pediram algo e ficaram sem resposta", "Inclui casos em que prometemos retornar. Nunca terminar sem um próximo passo.", b2, LARANJA, agora)}
-<tr>{td(PAPEL, "height:18px;font-size:1px;")}&nbsp;</td></tr>
-<tr>{td(MARROM, "border-radius:0 0 14px 14px;padding:20px 28px;")}
-<div style="font-size:14px;color:#ffffff;font-style:italic;">“Toda conversa é o começo de um momento feliz de alguém.”</div>
-<div style="font-size:12px;color:{ARGILA};padding-top:8px;line-height:18px;">Acolher · Revelar · Orientar · Materializar · Avançar<br>Alerta automático em dias úteis, de hora em hora, das 8h às 18h. Só entra quem espera há mais de 30 minutos.</div>
+<tr>{td(BRANCO, f"padding:22px 28px 8px 28px;")}
+<div style="border-top:1px solid {LINHA};padding-top:14px;font-size:13px;color:{TEXTO};font-style:italic;">“Toda conversa é o começo de um momento feliz de alguém.”</div>
+<div style="font-size:11px;color:{SUAVE};padding-top:6px;line-height:17px;">Acolher · Revelar · Orientar · Materializar · Avançar<br>Alerta automático em dias úteis, de hora em hora, das 8h às 18h. Só entra quem espera há mais de 30 minutos.</div>
 </td></tr>
 </table>
 </td></tr></table>'''
