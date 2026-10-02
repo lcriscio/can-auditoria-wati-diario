@@ -16,8 +16,9 @@ TZ = ZoneInfo("America/Sao_Paulo")
 BASE = "https://live-mt-server.wati.io/389231/api/v1"
 INBOX = "https://live.wati.io/389231/teamInbox"
 HORA_ABRE, HORA_FECHA = 9, 18
-HORA_PRIMEIRO_EMAIL = 8
-TOLERANCIA_MIN = 30  # só entra no alerta quem espera há pelo menos esse tempo
+HORA_PRIMEIRO_EMAIL = 9
+TOL_NOVO_MIN = 5     # contato novo: entra no alerta após esse tempo sem o primeiro atendimento
+TOL_ANTIGO_MIN = 30  # contato antigo: entra no alerta após esse tempo sem resposta do time
 SAIDA = os.path.join("data", "radar")
 
 
@@ -59,15 +60,15 @@ def dia_util_anterior(d):
     return d
 
 
-def elegivel_em(t, forcar=False):
+def elegivel_em(t, tol, forcar=False):
     """Momento a partir do qual a mensagem do cliente pode entrar no alerta."""
     if forcar or (dia_util(t.date()) and HORA_ABRE <= t.hour < HORA_FECHA):
-        return t + timedelta(minutes=TOLERANCIA_MIN)
-    # fora do horário: entra no primeiro e-mail (8h) do próximo dia útil
+        return t + timedelta(minutes=tol)
+    # fora do horário: entra no primeiro e-mail (9h) do próximo dia útil
     d = t.date() if (dia_util(t.date()) and t.hour < HORA_ABRE) else t.date() + timedelta(days=1)
     while not dia_util(d):
         d += timedelta(days=1)
-    return max(datetime.combine(d, time(HORA_PRIMEIRO_EMAIL, 0), TZ), t + timedelta(minutes=TOLERANCIA_MIN))
+    return max(datetime.combine(d, time(HORA_PRIMEIRO_EMAIL, 0), TZ), t + timedelta(minutes=tol))
 
 
 def rot(m):
@@ -79,7 +80,7 @@ def rot(m):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--agora")
-    ap.add_argument("--forcar", action="store_true", help="roda mesmo fora da janela 8h-18h (para testes)")
+    ap.add_argument("--forcar", action="store_true", help="roda mesmo fora da janela 9h-18h (para testes)")
     ap.add_argument("--fones", help="arquivo com telefones extras (um por linha), vindos do Airtable")
     args = ap.parse_args()
     agora = datetime.fromisoformat(args.agora).replace(tzinfo=TZ) if args.agora else datetime.now(TZ)
@@ -148,13 +149,15 @@ def main():
         if ult["quem"] == "cliente":
             # primeira mensagem do cliente que ficou sem resposta humana
             desde = next(m for m in clientes if not ult_hum or m["t"] > ult_hum["t"])
-            if desde["t"] < ini or elegivel_em(desde["t"], args.forcar) > agora:
+            # contato novo = nunca recebeu resposta de uma atendente; antigo = já recebeu
+            novo = not ult_hum
+            tol = TOL_NOVO_MIN if novo else TOL_ANTIGO_MIN
+            if desde["t"] < ini or elegivel_em(desde["t"], tol, args.forcar) > agora:
                 continue
-            sem_humano_recente = not ult_hum or (desde["t"] - ult_hum["t"]) > timedelta(days=30)
-            situacao = "sem_boas_vindas" if sem_humano_recente else "cliente_sem_resposta"
+            situacao = "contato_novo" if novo else "contato_antigo_sem_resposta"
         else:
             # última palavra foi do time: só interessa se pode ser uma promessa de retorno não cumprida
-            if ult_hum["t"] < ini or agora - ult_hum["t"] < timedelta(minutes=60):
+            if ult_hum["t"] < ini or agora - ult_hum["t"] < timedelta(minutes=TOL_ANTIGO_MIN):
                 continue
             desde = ult_hum
             situacao = "time_falou_por_ultimo"

@@ -129,18 +129,18 @@ def main():
 </td></tr>
 <tr>{td(BRANCO, "padding:18px 28px 0 28px;")}
 <table {T} width="100%"><tr>
-{tile(PESSEGO, len(b1), "sem boas-vindas", TERRACOTA)}
+{tile(PESSEGO, len(b1), "contatos novos", TERRACOTA)}
 <td width="3.5%">&nbsp;</td>
-{tile(MOSTARDA, len(b2), "sem resposta", LARANJA)}
+{tile(MOSTARDA, len(b2), "contatos antigos", LARANJA)}
 <td width="3.5%">&nbsp;</td>
 {td(CREME, "padding:12px 8px;border-radius:10px;", TILE)}<div style="font-size:13px;line-height:19px;color:{TEXTO};">{at_html}</div><div style="font-size:12px;color:{SUAVE};">por atendente</div></td>
 </tr></table>
 </td></tr>
-{bloco("Bloco 1 · A de Acolher", "Chegaram e ainda não receberam boas-vindas", "Meta do método: 1ª resposta em até 5 min no horário comercial.", b1, TERRACOTA, agora)}
-{bloco("Bloco 2 · Conversas em aberto", "Pediram algo e ficaram sem resposta", "Inclui casos em que prometemos retornar. Nunca terminar sem um próximo passo.", b2, LARANJA, agora)}
+{bloco("Contatos novos · A de Acolher", "Chegaram e ainda não receberam o primeiro atendimento", "Primeira mensagem no WhatsApp da Can há mais de 5 minutos, sem resposta de uma atendente.", b1, TERRACOTA, agora)}
+{bloco("Contatos antigos · Conversas em aberto", "Já em conversa conosco e esperando nossa resposta", "Sem resposta há mais de 30 minutos, ou com retorno prometido por nós e prazo vencido.", b2, LARANJA, agora)}
 <tr>{td(BRANCO, f"padding:22px 28px 8px 28px;")}
 <div style="border-top:1px solid {LINHA};padding-top:14px;font-size:13px;color:{TEXTO};font-style:italic;">“Toda conversa é o começo de um momento feliz de alguém.”</div>
-<div style="font-size:11px;color:{SUAVE};padding-top:6px;line-height:17px;">Acolher · Revelar · Orientar · Materializar · Avançar<br>Alerta automático em dias úteis, de hora em hora, das 8h às 18h. Só entra quem espera há mais de 30 minutos.</div>
+<div style="font-size:11px;color:{SUAVE};padding-top:6px;line-height:17px;">Acolher · Revelar · Orientar · Materializar · Avançar<br>Alerta automático em dias úteis, a cada 1h30, das 9h às 18h. Contato novo entra após 5 minutos sem atendimento; contato antigo, após 30 minutos sem resposta.</div>
 </td></tr>
 </table>
 </td></tr></table>'''
