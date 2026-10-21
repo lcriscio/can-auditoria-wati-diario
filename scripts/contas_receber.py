@@ -85,30 +85,64 @@ def pct_txt(v):
 
 
 def inconsistencias(p):
-    """Lista de (regra, explicação) para um pedido não perdido."""
+    """Lista de (regra, problema, o que fazer) para um pedido não perdido."""
     out = []
     cp, ds, cr = p["como_pago"], p["data_saldo"], p["criacao"]
     if cp == "Valor cheio" and (p["pct"] is None or abs(p["pct"] - 1) > 0.001):
         out.append(("Valor cheio sem 100%",
-                    f'Pagamento "Valor cheio", mas o percentual pago está em {pct_txt(p["pct"])}. Deveria ser 100%.'))
+                    f'Pagamento "Valor cheio", mas o percentual pago está em {pct_txt(p["pct"])}.',
+                    'Se o cliente paga tudo de uma vez, mude "Percentual pago como Sinal ou Valor cheio" para 100%. '
+                    'Se ele paga em duas partes, troque "Como esse pedido será pago" para "Sinal + Saldo" e preencha a data estimada do saldo.'))
     if cp == "Valor cheio" and ds:
         out.append(("Valor cheio com data de saldo",
                     f'Pagamento "Valor cheio", mas a data estimada do saldo está preenchida ({dt(ds)}). '
-                    'Essa data só deve existir em pedidos "Sinal + Saldo": apague a data ou corrija a forma de pagamento.'))
+                    'Essa data só deve existir em pedidos "Sinal + Saldo".',
+                    'Se o cliente paga tudo de uma vez, apague a "Data estimada para Pagamento do Saldo". '
+                    'Se existe saldo a receber, troque "Como esse pedido será pago" para "Sinal + Saldo" e ajuste o percentual do sinal.'))
     if cp == "Sinal + Saldo" and ds:
         if cr and ds <= cr:
             out.append(("Data do saldo ≤ criação",
-                        f'Data do saldo ({dt(ds)}) é igual ou anterior à criação do pedido ({dt(cr)}).'))
+                        f'Data do saldo ({dt(ds)}) é igual ou anterior à criação do pedido ({dt(cr)}).',
+                        'Confirme com o cliente quando o saldo será pago e corrija a "Data estimada para Pagamento do Saldo" '
+                        '(normalmente perto da entrega, sempre depois do sinal).'))
         elif p["data_sinal"] and ds <= p["data_sinal"]:
             out.append(("Data do saldo ≤ pagamento do sinal",
-                        f'Data do saldo ({dt(ds)}) é igual ou anterior ao pagamento do sinal ({dt(p["data_sinal"])}).'))
+                        f'Data do saldo ({dt(ds)}) é igual ou anterior ao pagamento do sinal ({dt(p["data_sinal"])}).',
+                        'Corrija a "Data estimada para Pagamento do Saldo" para a data combinada com o cliente, depois do pagamento do sinal.'))
     if p["data_entrega"] and cr and p["data_entrega"] < cr:
         out.append(("Entrega antes da criação",
-                    f'Data desejada de entrega ({dt(p["data_entrega"])}) é anterior à criação do pedido ({dt(cr)}).'))
+                    f'Data desejada de entrega ({dt(p["data_entrega"])}) é anterior à criação do pedido ({dt(cr)}).',
+                    'Confirme com o cliente a data em que ele quer receber e corrija a "Data desejada da Entrega do pedido".'))
     if cp == "Sinal + Saldo" and not ds and cr and cr >= CORTE_DATA_SALDO:
         out.append(("Sinal + Saldo sem data do saldo",
-                    'Pagamento "Sinal + Saldo", mas a data estimada do saldo está vazia.'))
+                    'Pagamento "Sinal + Saldo", mas a data estimada do saldo está vazia.',
+                    'Preencha a "Data estimada para Pagamento do Saldo" com a data combinada com o cliente. '
+                    'Sem ela, o saldo não entra no calendário de cobrança.'))
     return out
+
+
+def acao_cobranca(p, hoje):
+    """O que o Contas a Receber precisa fazer com um saldo em aberto."""
+    d, st = p["data_saldo"], p["status_saldo"]
+    emitida = st == "Pendente"
+    if d < hoje:
+        if emitida:
+            return ("Cobrar hoje: a cobrança já foi emitida e não foi paga. Reenvie o link de pagamento ao cliente pelo WhatsApp, "
+                    "confirme uma nova data e, se ele já pagou por outro meio, atualize o status do saldo para \"Pago\".")
+        return ("Cobrar hoje: o saldo venceu e a cobrança ainda não foi emitida. Em \"Emitir cobrança do Saldo deste pedido\" escolha "
+                "\"Sim, emitir agora\", envie o link ao cliente pelo WhatsApp e, se ele já pagou, marque o status do saldo como \"Pago\".")
+    if d <= hoje + timedelta(days=7):
+        quando = "hoje" if d == hoje else f"até {dt(d)}"
+        if emitida:
+            return f"Cobrança já emitida: lembre o cliente pelo WhatsApp de que o saldo vence {quando} e reenvie o link de pagamento."
+        return (f"Preparar a cobrança: emita o link do saldo (\"Emitir cobrança do Saldo deste pedido\" = \"Sim, emitir agora\") "
+                f"e envie ao cliente para pagamento {quando}.")
+    return "Nenhuma ação agora. Só confira se a data continua valendo; a cobrança entra em \"Importante\" 7 dias antes."
+
+
+def o_que_fazer(texto, cor):
+    return (f'<div style="margin:6px 0 0;padding:6px 10px;background:#FFF8E6;border-left:3px solid {cor};font-size:12px;color:#3B2A22">'
+            f'<b>👉 O que fazer:</b> {escape(texto)}</div>')
 
 
 def botao(url, texto="Abrir no Airtable →"):
@@ -148,7 +182,8 @@ def tier(H, titulo, descricao, cor, itens, hoje, vazio):
                  f'<b>Pedido #{p["id"]}</b> · {escape(p["cliente"])}'
                  f'<div style="font-size:12px;color:{CINZA}">{escape(p["responsavel"])} · status do saldo: {escape(p["status_saldo"] or "vazio")}</div></td>'
                  f'<td align="right" style="padding:8px 8px;border-top:1px solid {BORDA};white-space:nowrap"><b style="font-size:14px">{brl(p["saldo"])}</b></td>'
-                 f'<td align="right" width="150" style="padding:8px 14px 8px 0;border-top:1px solid {BORDA}">{botao(p["url"])}</td></tr>')
+                 f'<td align="right" width="150" style="padding:8px 14px 8px 0;border-top:1px solid {BORDA}">{botao(p["url"])}</td></tr>'
+                 f'<tr><td colspan="3" style="padding:0 14px 10px">{o_que_fazer(acao_cobranca(p, hoje), cor)}</td></tr>')
     H.append("</table>")
 
 
@@ -214,7 +249,7 @@ def main():
                  f'<tr><td colspan="2" bgcolor="{MARROM}" style="background:{MARROM};color:#ffffff;padding:8px 14px;font-weight:bold">'
                  f'👤 {escape(resp)} · {len(itens)} pedido{"s" if len(itens) != 1 else ""} para ajustar</td></tr>')
         for p, inc in itens:
-            lis = "".join(f'<li style="margin:2px 0"><b style="color:{VERMELHO}">{escape(r)}:</b> {escape(t)}</li>' for r, t in inc)
+            lis = "".join(f'<li style="margin:2px 0 8px"><b style="color:{VERMELHO}">{escape(r)}:</b> {escape(t)}{o_que_fazer(a, VERMELHO)}</li>' for r, t, a in inc)
             H.append(f'<tr><td style="padding:8px 14px;border-top:1px solid {BORDA}"><b>Pedido #{p["id"]}</b> · {escape(p["cliente"])}'
                      f'<span style="font-size:12px;color:{CINZA}"> · {escape(p["estagio"])}</span>'
                      f'<ul style="margin:4px 0 0;padding-left:18px">{lis}</ul></td>'
