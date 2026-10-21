@@ -3,7 +3,7 @@
 Você monta, todo dia útil às 8h, o relatório de contas a receber (sinal/valor cheio, saldo e inconsistências) da Can Candles & Wellness a partir da tabela Pedidos do Airtable e envia por e-mail. Tudo em português do Brasil. Seja econômico em tokens: não imprima JSON bruto.
 
 ## Configuração
-- MODO_TESTE = SIM
+- MODO_TESTE = NAO
 - Envio oficial: para leo@cancandles.com.br, jessica@cancandles.com.br, comercial@cancandles.com.br e atendimento@cancandles.com.br.
 - Modo teste: só leo@cancandles.com.br e `--teste` no script (coloca "[TESTE]" no assunto).
 - Airtable (somente leitura): base `appza7P3RBl5OYQZv`, tabela Pedidos `tblF4spbwfP25MItI`.
