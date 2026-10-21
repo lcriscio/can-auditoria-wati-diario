@@ -12,13 +12,14 @@ from html import escape
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/Sao_Paulo")
-BASE, TABELA = "appza7P3RBl5OYQZv", "tblF4spbwfP25MItI"
+BASE, TABELA, VISAO = "appza7P3RBl5OYQZv", "tblF4spbwfP25MItI", "viwSfm7jEfqBGEcyx"
 SAIDA = "data/contas"
 ASSUNTO = "💰 Calendário de Saldos para Cobrarmos"
 CORTE_DATA_SALDO = date(2026, 10, 20)  # antes disso não registrávamos a data do saldo
 
 MARROM, LARANJA, CREME, BORDA, CINZA = "#56301F", "#E8621E", "#FFF6F1", "#E4D4C8", "#8A7A6E"
 VERMELHO, AMBAR, AZUL = "#B23A24", "#C77700", "#2F5D7D"
+FUNDO, MIOLO = "#F3DCC6", "#FFF4EA"  # moldura terrosa e miolo laranja bem claro
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 F = {
@@ -49,7 +50,7 @@ def pedido(rec):
     criado = c.get(F["criacao"]) or rec.get("createdTime")
     return {
         "rec": rec["id"],
-        "url": f"https://airtable.com/{BASE}/{TABELA}/{rec['id']}",
+        "url": f"https://airtable.com/{BASE}/{TABELA}/{VISAO}/{rec['id']}?blocks=hide",
         "id": c.get(F["id"]),
         "cliente": c.get(F["faturamento"]) or ", ".join(x.get("name", "") for x in c.get(F["contato"]) or []) or "—",
         "responsavel": ", ".join(dict.fromkeys(nomes)) or "Sem responsável",
@@ -90,6 +91,10 @@ def inconsistencias(p):
     if cp == "Valor cheio" and (p["pct"] is None or abs(p["pct"] - 1) > 0.001):
         out.append(("Valor cheio sem 100%",
                     f'Pagamento "Valor cheio", mas o percentual pago está em {pct_txt(p["pct"])}. Deveria ser 100%.'))
+    if cp == "Valor cheio" and ds:
+        out.append(("Valor cheio com data de saldo",
+                    f'Pagamento "Valor cheio", mas a data estimada do saldo está preenchida ({dt(ds)}). '
+                    'Essa data só deve existir em pedidos "Sinal + Saldo": apague a data ou corrija a forma de pagamento.'))
     if cp == "Sinal + Saldo" and ds:
         if cr and ds <= cr:
             out.append(("Data do saldo ≤ criação",
@@ -107,8 +112,10 @@ def inconsistencias(p):
 
 
 def botao(url, texto="Abrir no Airtable →"):
-    return (f'<a href="{url}" style="display:inline-block;background:{LARANJA};color:#ffffff;text-decoration:none;'
-            f'font-size:12px;font-weight:bold;padding:6px 10px;border-radius:4px;white-space:nowrap">{texto}</a>')
+    return (f'<table cellpadding="0" cellspacing="0" align="right" style="border-collapse:separate"><tr>'
+            f'<td bgcolor="{LARANJA}" style="background:{LARANJA};border-radius:5px;padding:7px 12px">'
+            f'<a href="{url}" target="_blank" style="color:#ffffff;text-decoration:none;font-size:12px;font-weight:bold;'
+            f'font-family:Arial,Helvetica,sans-serif;white-space:nowrap;display:block">{texto}</a></td></tr></table>')
 
 
 def h2(t, sub):
@@ -124,9 +131,9 @@ def tier(H, titulo, descricao, cor, itens, hoje, vazio):
              f'<span style="float:right;font-size:15px;font-weight:bold">{brl(total)} · {len(itens)} pedido{"s" if len(itens) != 1 else ""}</span>'
              f'<div style="font-size:12px;opacity:.9">{descricao}</div></td></tr></table>')
     if not itens:
-        H.append(f'<p style="margin:0;padding:10px 14px;border:1px solid {BORDA};border-top:0;font-size:13px;color:{CINZA}">{vazio}</p>')
+        H.append(f'<p style="margin:0;padding:10px 14px;background:#ffffff;border:1px solid {BORDA};border-top:0;font-size:13px;color:{CINZA}">{vazio}</p>')
         return
-    H.append(f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;border:1px solid {BORDA};border-top:0;font-size:13px">')
+    H.append(f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;background:#ffffff;border:1px solid {BORDA};border-top:0;font-size:13px">')
     dia_atual = None
     for p in sorted(itens, key=lambda p: (p["data_saldo"], p["id"] or 0)):
         d = p["data_saldo"]
@@ -174,7 +181,9 @@ def main():
     for p, i in problemas:
         por_resp.setdefault(p["responsavel"], []).append((p, i))
 
-    H = [f'<div style="font-family:Arial,Helvetica,sans-serif;color:#3B2A22;font-size:14px;line-height:1.5;max-width:700px;margin:0 auto">']
+    H = [f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="{FUNDO}" style="background:{FUNDO};border-collapse:collapse"><tr><td style="padding:24px 12px">'
+         f'<div style="font-family:Arial,Helvetica,sans-serif;color:#3B2A22;font-size:14px;line-height:1.5;max-width:700px;margin:0 auto;'
+         f'background:{MIOLO};border:1px solid {BORDA};border-radius:8px;overflow:hidden">']
     H.append(f'<div style="background:{MARROM};color:#ffffff;padding:18px 20px">'
              f'<div style="font-size:20px;font-weight:bold">💰 Calendário de Saldos para Cobrarmos</div>'
              f'<div style="font-size:13px;opacity:.85">Can Candles &amp; Wellness · {DIAS[hoje.weekday()]} {hoje.strftime("%d/%m/%Y")} · fonte: Pedidos no Airtable</div></div>')
@@ -183,13 +192,14 @@ def main():
              (brl(sum(p["saldo"] for p in proximos)), f"🟠 próximos 7 dias ({len(proximos)})", AMBAR),
              (brl(sum(p["saldo"] for p in futuros)), f"🔵 futuros ({len(futuros)})", AZUL),
              (str(len(problemas)), "⚠️ pedidos com inconsistência", MARROM)]
-    H.append(f'<div style="background:{CREME};padding:16px 20px"><p style="margin:0 0 10px">Bom dia, time! Este é o mapa do que temos a receber de saldos e dos pedidos que precisam de ajuste no CRM.</p>'
+    H.append(f'<div style="background:#FCE6D4;padding:16px 20px"><p style="margin:0 0 10px">Bom dia, time! Este é o mapa do que temos a receber de saldos e dos pedidos que precisam de ajuste no CRM.</p>'
              '<table cellpadding="0" cellspacing="6" width="100%" style="text-align:center"><tr>')
     for v, rot, cor in tiles:
         H.append(f'<td width="25%" style="padding:10px 4px;border:1px solid {BORDA};background:#ffffff">'
                  f'<div style="font-size:17px;font-weight:bold;color:{cor}">{v}</div><div style="font-size:11px">{rot}</div></td>')
     H.append(f'</tr></table><p style="margin:10px 0 0;font-size:13px"><b>Total em aberto:</b> {brl(sum(p["saldo"] for p in receber))} em {len(receber)} pedido{"s" if len(receber) != 1 else ""}.</p></div>')
 
+    H.append('<div style="padding:0 20px 20px">')
     H.append(h2("Bloco 1 · O que temos que cobrar", "Responsável: Área de Contas a Receber · pedidos com data estimada do saldo preenchida e status do saldo diferente de \"Pago\""))
     tier(H, "🔴 Urgente · casos que venceram", "Data do saldo anterior a hoje: cobrar já.", VERMELHO, vencidos, hoje, "Nenhum saldo vencido. 🎉")
     tier(H, "🟠 Importante · próximos 7 dias", f"Data do saldo entre hoje e {(hoje + timedelta(days=7)).strftime('%d/%m')}: preparar a cobrança.", AMBAR, proximos, hoje, "Nenhum saldo previsto para os próximos 7 dias.")
@@ -197,10 +207,10 @@ def main():
 
     H.append(h2("Bloco 2 · Inconsistências para ajustar", "Responsável: Área de Vendas · cada pessoa ajusta os pedidos sob sua responsabilidade"))
     if not problemas:
-        H.append(f'<p style="margin:0;padding:10px 14px;border:1px solid {BORDA};font-size:13px;color:{CINZA}">Nenhuma inconsistência encontrada. CRM em dia! 🎉</p>')
+        H.append(f'<p style="margin:0;padding:10px 14px;background:#ffffff;border:1px solid {BORDA};font-size:13px;color:{CINZA}">Nenhuma inconsistência encontrada. CRM em dia! 🎉</p>')
     for resp in sorted(por_resp, key=lambda r: (r == "Sem responsável", r)):
         itens = sorted(por_resp[resp], key=lambda x: x[0]["id"] or 0)
-        H.append(f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:14px 0 0;border:1px solid {BORDA};font-size:13px">'
+        H.append(f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;background:#ffffff;margin:14px 0 0;border:1px solid {BORDA};font-size:13px">'
                  f'<tr><td colspan="2" bgcolor="{MARROM}" style="background:{MARROM};color:#ffffff;padding:8px 14px;font-weight:bold">'
                  f'👤 {escape(resp)} · {len(itens)} pedido{"s" if len(itens) != 1 else ""} para ajustar</td></tr>')
         for p, inc in itens:
@@ -214,11 +224,11 @@ def main():
     H.append(f'<div style="font-size:11px;color:{CINZA};margin:24px 0 0;border-top:1px solid {BORDA};padding-top:10px">'
              '<p style="margin:0 0 4px"><b>Como lemos o CRM.</b> Bloco 1: pedidos com "Data estimada para Pagamento do Saldo" preenchida, saldo a pagar maior que zero e '
              '"Status da Cobrança do Saldo" diferente de "Pago". O valor é o campo "Montante a ser pago no Saldo".</p>'
-             '<p style="margin:0 0 4px">Bloco 2: (1) "Valor cheio" com percentual diferente de 100%; (2) "Sinal + Saldo" com data do saldo igual ou anterior à criação do pedido '
+             '<p style="margin:0 0 4px">Bloco 2: (1) "Valor cheio" com percentual diferente de 100% ou com data do saldo preenchida; (2) "Sinal + Saldo" com data do saldo igual ou anterior à criação do pedido '
              'ou ao pagamento do sinal; (3) data desejada de entrega anterior à criação do pedido; (4) "Sinal + Saldo" sem data do saldo, só para pedidos criados a partir de '
              f'{CORTE_DATA_SALDO.strftime("%d/%m/%Y")}.</p>'
              '<p style="margin:0">Pedidos perdidos (estágio "11. Perdido") ficam de fora dos dois blocos. Datas no horário de Brasília.</p></div>')
-    H.append('<p style="margin:12px 0 0;font-size:13px">Contas a Receber · Can Candles</p></div>')
+    H.append('<p style="margin:12px 0 0;font-size:13px">Contas a Receber · Can Candles</p></div></div></td></tr></table>')
 
     os.makedirs(SAIDA, exist_ok=True)
     open(os.path.join(SAIDA, "email.html"), "w").write("\n".join(H))
