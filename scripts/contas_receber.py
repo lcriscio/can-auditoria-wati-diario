@@ -19,7 +19,8 @@ CORTE_DATA_SALDO = date(2026, 10, 20)  # antes disso não registrávamos a data 
 
 MARROM, LARANJA, CREME, BORDA, CINZA = "#56301F", "#E8621E", "#FFF6F1", "#E4D4C8", "#8A7A6E"
 VERMELHO, AMBAR, AZUL = "#B23A24", "#C77700", "#2F5D7D"
-FUNDO, MIOLO = "#F3DCC6", "#FFF4EA"  # moldura terrosa e miolo laranja bem claro
+FUNDO, TOPO, BORDA_CARD = "#FFF1E6", "#FFDDC2", "#F6D9C2"  # laranja bem claro, faixa do topo e bordas
+TINTA = {VERMELHO: "#FDE6E1", AMBAR: "#FFF0D4", AZUL: "#E6EFF6", MARROM: "#F8E9DE"}  # fundo claro de cada cor
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
 F = {
@@ -141,33 +142,47 @@ def acao_cobranca(p, hoje):
 
 
 def o_que_fazer(texto, cor):
-    return (f'<div style="margin:6px 0 0;padding:6px 10px;background:#FFF8E6;border-left:3px solid {cor};font-size:12px;color:#3B2A22">'
-            f'<b>👉 O que fazer:</b> {escape(texto)}</div>')
+    return (f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:10px 0 0"><tr>'
+            f'<td bgcolor="#FFF7EC" style="background:#FFF7EC;border-left:3px solid {cor};padding:8px 12px;font-size:13px;line-height:1.5;color:#3B2A22">'
+            f'<b>👉 O que fazer:</b> {escape(texto)}</td></tr></table>')
 
 
 def botao(url, texto="Abrir no Airtable →"):
-    return (f'<table cellpadding="0" cellspacing="0" align="right" style="border-collapse:separate"><tr>'
-            f'<td bgcolor="{LARANJA}" style="background:{LARANJA};border-radius:5px;padding:7px 12px">'
-            f'<a href="{url}" target="_blank" style="color:#ffffff;text-decoration:none;font-size:12px;font-weight:bold;'
+    return (f'<table cellpadding="0" cellspacing="0" style="border-collapse:separate;margin:10px 0 0"><tr>'
+            f'<td bgcolor="{LARANJA}" style="background:{LARANJA};border-radius:6px;padding:9px 16px">'
+            f'<a href="{url}" target="_blank" style="color:#ffffff;text-decoration:none;font-size:13px;font-weight:bold;'
             f'font-family:Arial,Helvetica,sans-serif;white-space:nowrap;display:block">{texto}</a></td></tr></table>')
 
 
 def h2(t, sub):
-    return (f'<h2 style="color:{MARROM};font-size:18px;margin:28px 0 2px">{t}</h2>'
-            f'<p style="margin:0 0 10px;font-size:12px;color:{CINZA}">{sub}</p>')
+    return (f'<h2 style="color:{MARROM};font-size:19px;margin:28px 0 2px">{t}</h2>'
+            f'<p style="margin:0 0 6px;font-size:13px;color:{CINZA}">{sub}</p>')
+
+
+def faixa(titulo, linha2, descricao, cor):
+    """Cabeçalho de grupo: fundo claro da cor, borda lateral forte e texto escuro (legível em qualquer cliente)."""
+    return (f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:16px 0 0"><tr>'
+            f'<td bgcolor="{TINTA[cor]}" style="background:{TINTA[cor]};border-left:5px solid {cor};border-radius:6px 6px 0 0;padding:10px 14px">'
+            f'<div style="font-size:16px;font-weight:bold;color:{cor}">{titulo}</div>'
+            + (f'<div style="font-size:15px;font-weight:bold;color:#3B2A22;margin:2px 0 0">{linha2}</div>' if linha2 else "")
+            + (f'<div style="font-size:12px;color:#5A4A40;margin:2px 0 0">{descricao}</div>' if descricao else "")
+            + '</td></tr></table>')
+
+
+def cartao(conteudo):
+    return (f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;background:#ffffff;'
+            f'border:1px solid {BORDA_CARD};border-top:0"><tr><td style="padding:14px 16px">{conteudo}</td></tr></table>')
+
+
+def plural(n, s="pedido"):
+    return f'{n} {s}{"s" if n != 1 else ""}'
 
 
 def tier(H, titulo, descricao, cor, itens, hoje, vazio):
-    total = sum(p["saldo"] for p in itens)
-    H.append(f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:14px 0 0">'
-             f'<tr><td bgcolor="{cor}" style="background:{cor};color:#ffffff;padding:10px 14px">'
-             f'<span style="font-size:15px;font-weight:bold">{titulo}</span>'
-             f'<span style="float:right;font-size:15px;font-weight:bold">{brl(total)} · {len(itens)} pedido{"s" if len(itens) != 1 else ""}</span>'
-             f'<div style="font-size:12px;opacity:.9">{descricao}</div></td></tr></table>')
+    H.append(faixa(titulo, f'{brl(sum(p["saldo"] for p in itens))} · {plural(len(itens))}', descricao, cor))
     if not itens:
-        H.append(f'<p style="margin:0;padding:10px 14px;background:#ffffff;border:1px solid {BORDA};border-top:0;font-size:13px;color:{CINZA}">{vazio}</p>')
+        H.append(cartao(f'<span style="font-size:13px;color:{CINZA}">{vazio}</span>'))
         return
-    H.append(f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;background:#ffffff;border:1px solid {BORDA};border-top:0;font-size:13px">')
     dia_atual = None
     for p in sorted(itens, key=lambda p: (p["data_saldo"], p["id"] or 0)):
         d = p["data_saldo"]
@@ -176,15 +191,14 @@ def tier(H, titulo, descricao, cor, itens, hoje, vazio):
             do_dia = [x for x in itens if x["data_saldo"] == d]
             delta = (d - hoje).days
             rel = "hoje" if delta == 0 else (f"venceu há {-delta} dia{'s' if delta < -1 else ''}" if delta < 0 else f"em {delta} dia{'s' if delta > 1 else ''}")
-            H.append(f'<tr><td colspan="3" bgcolor="{CREME}" style="background:{CREME};padding:6px 14px;border-top:1px solid {BORDA}">'
-                     f'<b style="color:{cor}">📅 {dt(d)}</b> <span style="color:{CINZA};font-size:12px">· {rel} · {brl(sum(x["saldo"] for x in do_dia))}</span></td></tr>')
-        H.append(f'<tr><td style="padding:8px 14px;border-top:1px solid {BORDA}">'
-                 f'<b>Pedido #{p["id"]}</b> · {escape(p["cliente"])}'
-                 f'<div style="font-size:12px;color:{CINZA}">{escape(p["responsavel"])} · status do saldo: {escape(p["status_saldo"] or "vazio")}</div></td>'
-                 f'<td align="right" style="padding:8px 8px;border-top:1px solid {BORDA};white-space:nowrap"><b style="font-size:14px">{brl(p["saldo"])}</b></td>'
-                 f'<td align="right" width="150" style="padding:8px 14px 8px 0;border-top:1px solid {BORDA}">{botao(p["url"])}</td></tr>'
-                 f'<tr><td colspan="3" style="padding:0 14px 10px">{o_que_fazer(acao_cobranca(p, hoje), cor)}</td></tr>')
-    H.append("</table>")
+            H.append(f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="{CREME}" style="border-collapse:collapse;background:{CREME};border:1px solid {BORDA_CARD};border-top:0">'
+                     f'<tr><td style="padding:7px 16px;font-size:13px"><b style="color:{cor}">📅 {dt(d)}</b> '
+                     f'<span style="color:{CINZA}">· {rel} · {brl(sum(x["saldo"] for x in do_dia))}</span></td></tr></table>')
+        H.append(cartao(
+            f'<div style="font-size:15px;font-weight:bold;color:#3B2A22">Pedido #{p["id"]} · {escape(p["cliente"])}</div>'
+            f'<div style="font-size:12px;color:{CINZA};margin:2px 0 0">Responsável: {escape(p["responsavel"])} · Status do saldo: {escape(p["status_saldo"] or "vazio")}</div>'
+            f'<div style="margin:8px 0 0;font-size:13px;color:#5A4A40">Saldo a cobrar <b style="font-size:20px;color:{cor}">{brl(p["saldo"])}</b></div>'
+            f'{o_que_fazer(acao_cobranca(p, hoje), cor)}{botao(p["url"])}'))
 
 
 def main():
@@ -216,25 +230,26 @@ def main():
     for p, i in problemas:
         por_resp.setdefault(p["responsavel"], []).append((p, i))
 
-    H = [f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="{FUNDO}" style="background:{FUNDO};border-collapse:collapse"><tr><td style="padding:24px 12px">'
-         f'<div style="font-family:Arial,Helvetica,sans-serif;color:#3B2A22;font-size:14px;line-height:1.5;max-width:700px;margin:0 auto;'
-         f'background:{MIOLO};border:1px solid {BORDA};border-radius:8px;overflow:hidden">']
-    H.append(f'<div style="background:{MARROM};color:#ffffff;padding:18px 20px">'
-             f'<div style="font-size:20px;font-weight:bold">💰 Calendário de Saldos para Cobrarmos</div>'
-             f'<div style="font-size:13px;opacity:.85">Can Candles &amp; Wellness · {DIAS[hoje.weekday()]} {hoje.strftime("%d/%m/%Y")} · fonte: Pedidos no Airtable</div></div>')
+    H = [f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="{FUNDO}" style="background:{FUNDO};border-collapse:collapse"><tr><td align="center" style="padding:16px 8px">'
+         f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="max-width:640px;border-collapse:separate;background:#ffffff;'
+         f'border:1px solid {BORDA_CARD};border-radius:10px"><tr><td align="left" style="font-family:Arial,Helvetica,sans-serif;color:#3B2A22;font-size:14px;line-height:1.5">']
+    H.append(f'<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse"><tr>'
+             f'<td bgcolor="{TOPO}" style="background:{TOPO};border-radius:10px 10px 0 0;border-bottom:3px solid {LARANJA};padding:18px 20px">'
+             f'<div style="font-size:21px;font-weight:bold;color:{MARROM}">💰 Calendário de Saldos para Cobrarmos</div>'
+             f'<div style="font-size:13px;color:#7A4A2E;margin:2px 0 0">Can Candles &amp; Wellness · {DIAS[hoje.weekday()]} {hoje.strftime("%d/%m/%Y")}</div></td></tr></table>')
 
-    tiles = [(brl(sum(p["saldo"] for p in vencidos)), f"🔴 vencidos ({len(vencidos)})", VERMELHO),
-             (brl(sum(p["saldo"] for p in proximos)), f"🟠 próximos 7 dias ({len(proximos)})", AMBAR),
-             (brl(sum(p["saldo"] for p in futuros)), f"🔵 futuros ({len(futuros)})", AZUL),
+    tiles = [(brl(sum(p["saldo"] for p in vencidos)), f"🔴 vencidos · {plural(len(vencidos))}", VERMELHO),
+             (brl(sum(p["saldo"] for p in proximos)), f"🟠 próximos 7 dias · {plural(len(proximos))}", AMBAR),
+             (brl(sum(p["saldo"] for p in futuros)), f"🔵 futuros · {plural(len(futuros))}", AZUL),
              (str(len(problemas)), "⚠️ pedidos com inconsistência", MARROM)]
-    H.append(f'<div style="background:#FCE6D4;padding:16px 20px"><p style="margin:0 0 10px">Bom dia, time! Este é o mapa do que temos a receber de saldos e dos pedidos que precisam de ajuste no CRM.</p>'
-             '<table cellpadding="0" cellspacing="6" width="100%" style="text-align:center"><tr>')
-    for v, rot, cor in tiles:
-        H.append(f'<td width="25%" style="padding:10px 4px;border:1px solid {BORDA};background:#ffffff">'
-                 f'<div style="font-size:17px;font-weight:bold;color:{cor}">{v}</div><div style="font-size:11px">{rot}</div></td>')
-    H.append(f'</tr></table><p style="margin:10px 0 0;font-size:13px"><b>Total em aberto:</b> {brl(sum(p["saldo"] for p in receber))} em {len(receber)} pedido{"s" if len(receber) != 1 else ""}.</p></div>')
+    cel = lambda v, rot, cor: (f'<td width="50%" bgcolor="{TINTA[cor]}" style="background:{TINTA[cor]};border-radius:8px;padding:12px 8px;text-align:center">'
+                               f'<div style="font-size:19px;font-weight:bold;color:{cor}">{v}</div><div style="font-size:12px;color:#3B2A22">{rot}</div></td>')
+    H.append('<div style="padding:16px 20px 4px"><p style="margin:0 0 12px">Bom dia, time! Este é o mapa do que temos a receber de saldos e dos pedidos que precisam de ajuste no CRM.</p>'
+             '<table cellpadding="0" cellspacing="6" width="100%" style="border-collapse:separate">'
+             f'<tr>{cel(*tiles[0])}{cel(*tiles[1])}</tr><tr>{cel(*tiles[2])}{cel(*tiles[3])}</tr></table>'
+             f'<p style="margin:8px 0 0;font-size:14px"><b>Total em aberto:</b> {brl(sum(p["saldo"] for p in receber))} em {plural(len(receber))}.</p></div>')
 
-    H.append('<div style="padding:0 20px 20px">')
+    H.append('<div style="padding:0 16px 20px">')
     H.append(h2("Bloco 1 · O que temos que cobrar", "Responsável: Área de Contas a Receber · pedidos com data estimada do saldo preenchida e status do saldo diferente de \"Pago\""))
     tier(H, "🔴 Urgente · casos que venceram", "Data do saldo anterior a hoje: cobrar já.", VERMELHO, vencidos, hoje, "Nenhum saldo vencido. 🎉")
     tier(H, "🟠 Importante · próximos 7 dias", f"Data do saldo entre hoje e {(hoje + timedelta(days=7)).strftime('%d/%m')}: preparar a cobrança.", AMBAR, proximos, hoje, "Nenhum saldo previsto para os próximos 7 dias.")
@@ -245,16 +260,13 @@ def main():
         H.append(f'<p style="margin:0;padding:10px 14px;background:#ffffff;border:1px solid {BORDA};font-size:13px;color:{CINZA}">Nenhuma inconsistência encontrada. CRM em dia! 🎉</p>')
     for resp in sorted(por_resp, key=lambda r: (r == "Sem responsável", r)):
         itens = sorted(por_resp[resp], key=lambda x: x[0]["id"] or 0)
-        H.append(f'<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;background:#ffffff;margin:14px 0 0;border:1px solid {BORDA};font-size:13px">'
-                 f'<tr><td colspan="2" bgcolor="{MARROM}" style="background:{MARROM};color:#ffffff;padding:8px 14px;font-weight:bold">'
-                 f'👤 {escape(resp)} · {len(itens)} pedido{"s" if len(itens) != 1 else ""} para ajustar</td></tr>')
+        H.append(faixa(f"👤 {escape(resp)}", f"{plural(len(itens))} para ajustar", "", MARROM))
         for p, inc in itens:
-            lis = "".join(f'<li style="margin:2px 0 8px"><b style="color:{VERMELHO}">{escape(r)}:</b> {escape(t)}{o_que_fazer(a, VERMELHO)}</li>' for r, t, a in inc)
-            H.append(f'<tr><td style="padding:8px 14px;border-top:1px solid {BORDA}"><b>Pedido #{p["id"]}</b> · {escape(p["cliente"])}'
-                     f'<span style="font-size:12px;color:{CINZA}"> · {escape(p["estagio"])}</span>'
-                     f'<ul style="margin:4px 0 0;padding-left:18px">{lis}</ul></td>'
-                     f'<td align="right" valign="top" width="150" style="padding:8px 14px 8px 0;border-top:1px solid {BORDA}">{botao(p["url"], "Ajustar no Airtable →")}</td></tr>')
-        H.append("</table>")
+            probs = "".join(f'<div style="margin:10px 0 0;font-size:13px"><b style="color:{VERMELHO}">⚠️ {escape(r)}:</b> {escape(t)}</div>'
+                            f'{o_que_fazer(a, VERMELHO)}' for r, t, a in inc)
+            H.append(cartao(f'<div style="font-size:15px;font-weight:bold;color:#3B2A22">Pedido #{p["id"]} · {escape(p["cliente"])}</div>'
+                            f'<div style="font-size:12px;color:{CINZA};margin:2px 0 0">Estágio: {escape(p["estagio"])}</div>'
+                            f'{probs}{botao(p["url"], "Ajustar no Airtable →")}'))
 
     H.append(f'<div style="font-size:11px;color:{CINZA};margin:24px 0 0;border-top:1px solid {BORDA};padding-top:10px">'
              '<p style="margin:0 0 4px"><b>Como lemos o CRM.</b> Bloco 1: pedidos com "Data estimada para Pagamento do Saldo" preenchida, saldo a pagar maior que zero e '
@@ -263,7 +275,7 @@ def main():
              'ou ao pagamento do sinal; (3) data desejada de entrega anterior à criação do pedido; (4) "Sinal + Saldo" sem data do saldo, só para pedidos criados a partir de '
              f'{CORTE_DATA_SALDO.strftime("%d/%m/%Y")}.</p>'
              '<p style="margin:0">Pedidos perdidos (estágio "11. Perdido") ficam de fora dos dois blocos. Datas no horário de Brasília.</p></div>')
-    H.append('<p style="margin:12px 0 0;font-size:13px">Contas a Receber · Can Candles</p></div></div></td></tr></table>')
+    H.append('<p style="margin:12px 0 0;font-size:13px">Contas a Receber · Can Candles</p></div></td></tr></table></td></tr></table>')
 
     os.makedirs(SAIDA, exist_ok=True)
     open(os.path.join(SAIDA, "email.html"), "w").write("\n".join(H))
