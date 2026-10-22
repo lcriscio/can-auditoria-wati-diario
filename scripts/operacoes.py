@@ -176,7 +176,7 @@ def acao_produzir(p, pendentes, hoje):
         partes = ['Produção em andamento: conclua a produção e mude o Estágio para "7. Produção finalizada".']
         if pendentes:
             partes.append(f'Atenção: {plural(len(pendentes), "insumo")} deste pedido ainda {"está" if len(pendentes) == 1 else "estão"} '
-                          'sem data de compra na tabela Compras. Se já foram comprados, preencha a data.')
+                          f'sem data de compra na tabela Compras. Se já {"foi comprado" if len(pendentes) == 1 else "foram comprados"}, preencha a data.')
     else:
         partes = ['Produção pronta: combine a entrega ou retirada com o cliente e, quando entregar, mude o Estágio para "8. Entrega feita".']
         if not p["endereco"]:
