@@ -1,0 +1,127 @@
+{
+  "name": "Tracking de Aberturas e Cliques SendGrid - Cadências",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "metadata": {"designer": {"name": "Receber eventos do SendGrid (open/click)"}},
+      "parameters": {"hook": 2824669}
+    },
+    {
+      "id": 2,
+      "module": "airtable:ActionGetRecord",
+      "version": 3,
+      "filter": {
+        "name": "Somente open/click da cadência com record_id válido",
+        "conditions": [
+          [
+            {"a": "{{1.event}}", "b": "open", "o": "text:equal"},
+            {"a": "{{1.source}}", "b": "leads_receita", "o": "text:equal"},
+            {"a": "{{1.record_id}}", "b": "^rec[A-Za-z0-9]{14}$", "o": "text:pattern"}
+          ],
+          [
+            {"a": "{{1.event}}", "b": "click", "o": "text:equal"},
+            {"a": "{{1.source}}", "b": "leads_receita", "o": "text:equal"},
+            {"a": "{{1.record_id}}", "b": "^rec[A-Za-z0-9]{14}$", "o": "text:pattern"}
+          ]
+        ]
+      },
+      "mapper": {
+        "id": "{{1.record_id}}",
+        "base": "appza7P3RBl5OYQZv",
+        "table": "tblShRRbPPTvvPLe0",
+        "useColumnId": true
+      },
+      "metadata": {"designer": {"name": "Consultar status atual do lead"}},
+      "parameters": {"__IMTCONN__": 8557498},
+      "onerror": [
+        {"id": 7, "module": "builtin:Ignore", "version": 1, "mapper": {}, "parameters": {}, "metadata": {"designer": {"name": "Lead não encontrado: ignorar"}}}
+      ]
+    },
+    {
+      "id": 3,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {"designer": {"name": "Abertura ou clique"}},
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 4,
+              "module": "airtable:ActionUpdateRecords",
+              "version": 3,
+              "filter": {
+                "name": "Abertura: só promove quem está sem interação",
+                "conditions": [
+                  [
+                    {"a": "{{1.event}}", "b": "open", "o": "text:equal"},
+                    {"a": "{{2.fldGTAW7Bq39Wtqwj}}", "o": "notexist"}
+                  ],
+                  [
+                    {"a": "{{1.event}}", "b": "open", "o": "text:equal"},
+                    {"a": "{{2.fldGTAW7Bq39Wtqwj}}", "b": "Sem interação", "o": "text:equal"}
+                  ]
+                ]
+              },
+              "mapper": {
+                "id": "{{1.record_id}}",
+                "base": "appza7P3RBl5OYQZv",
+                "table": "tblShRRbPPTvvPLe0",
+                "record": {"fldGTAW7Bq39Wtqwj": "Abriu o Email"},
+                "typecast": false,
+                "useColumnId": false
+              },
+              "metadata": {"designer": {"name": "Registrar abertura"}},
+              "parameters": {"__IMTCONN__": 8557498},
+              "onerror": [
+                {"id": 8, "module": "builtin:Ignore", "version": 1, "mapper": {}, "parameters": {}}
+              ]
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 5,
+              "module": "airtable:ActionUpdateRecords",
+              "version": 3,
+              "filter": {
+                "name": "Clique genérico sem sobrescrever conversões",
+                "conditions": [
+                  [
+                    {"a": "{{1.event}}", "b": "click", "o": "text:equal"},
+                    {"a": "{{1.url}}", "b": "hook.us2.make.com", "o": "text:notcontain"},
+                    {"a": "{{2.fldGTAW7Bq39Wtqwj}}", "b": "Clicou em Optout", "o": "text:notequal"},
+                    {"a": "{{2.fldGTAW7Bq39Wtqwj}}", "b": "Clicou no CTA do WhatsApp", "o": "text:notequal"},
+                    {"a": "{{2.fldGTAW7Bq39Wtqwj}}", "b": "Clicou em algum botão aleatório", "o": "text:notequal"}
+                  ]
+                ]
+              },
+              "mapper": {
+                "id": "{{1.record_id}}",
+                "base": "appza7P3RBl5OYQZv",
+                "table": "tblShRRbPPTvvPLe0",
+                "record": {"fldGTAW7Bq39Wtqwj": "Clicou em algum botão aleatório"},
+                "typecast": false,
+                "useColumnId": false
+              },
+              "metadata": {"designer": {"name": "Registrar clique genérico"}},
+              "parameters": {"__IMTCONN__": 8557498},
+              "onerror": [
+                {"id": 9, "module": "builtin:Ignore", "version": 1, "mapper": {}, "parameters": {}}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": true,
+    "version": 1,
+    "designer": {"orphans": []},
+    "scenario": {"dlq": false, "dataloss": false, "maxErrors": 3, "autoCommit": true, "roundtrips": 1, "sequential": false, "confidential": false}
+  }
+}
