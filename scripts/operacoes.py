@@ -36,9 +36,9 @@ FC = {
 }
 FF = {"nome": "fld9N6f5G3XQjZuWK"}
 
-# Estágios monitorados: "4. Sinal pago" a "10. Pagamento final realizado".
-# Ficam de fora 0, 1, 2, 3 (venda ainda sem sinal) e 11 (perdido).
-MONITORADOS = ("4.", "5.", "6.", "7.", "8.", "9.", "10.")
+# Estágios monitorados: "4. Sinal pago" a "7. Produção finalizada" (pedidos ainda não entregues).
+# 8, 9 e 10 já foram entregues e não entram em nenhuma frente; 0 a 3 e 11 ficam de fora.
+MONITORADOS = ("4.", "5.", "6.", "7.")
 COMPRAR = ("4.", "5.")
 PRODUZIR = ("6.", "7.")
 ENTREGAR = ("4.", "5.", "6.", "7.")
@@ -387,9 +387,10 @@ def main():
 
     resumo = " · ".join(f"{escape(e)}: {n}" for e, n in sorted(estagios.items(), key=lambda x: int(x[0].split(".")[0])))
     H.append(f'<div style="font-size:11px;color:{CINZA};margin:24px 0 0;border-top:1px solid {BORDA};padding-top:10px">'
-             f'<p style="margin:0 0 4px"><b>Pedidos monitorados ({len(pedidos)}):</b> {resumo or "nenhum"}.</p>'
-             '<p style="margin:0 0 4px"><b>Como lemos o CRM.</b> Todos os pedidos nos estágios "4. Sinal pago" a '
-             '"10. Pagamento final realizado" (ficam de fora 0, 1, 2, 3 e 11). Urgência pela "Data desejada da Entrega do pedido" contada a partir de hoje: '
+             f'<p style="margin:0 0 4px"><b>Pedidos em andamento ({len(pedidos)}):</b> {resumo or "nenhum"}.</p>'
+             '<p style="margin:0 0 4px"><b>Como lemos o CRM.</b> Todos os pedidos de "4. Sinal pago" a "7. Produção finalizada". '
+             'Pedidos em 8, 9 e 10 já foram entregues e não entram em nenhuma frente; 0, 1, 2, 3 e 11 ficam de fora. '
+             'Urgência pela "Data desejada da Entrega do pedido" contada a partir de hoje: '
              'alta até 7 dias (inclui datas vencidas), moderada de 8 a 15 dias e baixa a partir de 16 dias.</p>'
              '<p style="margin:0">Comprar: linhas da tabela Compras sem data da compra, ligadas a pedidos em 4 ou 5. Produzir: pedidos em 6 ou 7 com a data do pagamento do sinal '
              'ou valor cheio preenchida. Entregar: pedidos em 4, 5, 6 ou 7 com a data desejada de entrega anterior a hoje. Datas no horário de Brasília.</p></div>')
@@ -398,7 +399,7 @@ def main():
     os.makedirs(SAIDA, exist_ok=True)
     open(os.path.join(SAIDA, "email.html"), "w").write("\n".join(H))
     open(os.path.join(SAIDA, "assunto.txt"), "w").write(("[TESTE] " if a.teste else "") + f'{ASSUNTO} · {DIAS[hoje.weekday()]} {hoje.strftime("%d/%m")}')
-    print(f"ok: monitorados={len(pedidos)} comprar={len(g1)} (itens={n_itens}, alta={alta(g1)}) produzir={len(g2)} (alta={alta(g2)}) "
+    print(f"ok: em_andamento={len(pedidos)} comprar={len(g1)} (itens={n_itens}, alta={alta(g1)}) produzir={len(g2)} (alta={alta(g2)}) "
           f"entregar={len(g3)} atencao={len(atencao)}")
 
 

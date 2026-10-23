@@ -16,13 +16,13 @@ Você monta, todo dia às 7h, a visão gerencial de Compras, Produção e Entreg
 ## Passos
 Crie a pasta com `mkdir -p data/operacoes`. Em cada consulta, a resposta grande costuma ser salva automaticamente em um arquivo: copie esse arquivo para o destino indicado. Se vier inline, grave o JSON no destino. Se houver `nextCursor`, busque as próximas páginas e grave como `...2.json`, `...3.json`…
 
-1. **Pedidos** · `list_records_for_table` (base e tabela Pedidos acima), `pageSize` 1000, filtro dos estágios 4 a 10
-   `{"operands":[{"operator":"isAnyOf","operands":["fldBIfAlemFpuuo3b",["selayNJjucgfO6jgj","sela8tfpLZIN7Il5a","selqs5qw6KhuSctFF","selm6UHsmUWkZaiBD","sel0k9ltTdOXRWHFw","selP2joSQhAHfknwF","selEtryumbrVlY7kj"]]}]}`
+1. **Pedidos** · `list_records_for_table` (base e tabela Pedidos acima), `pageSize` 1000, filtro dos estágios 4 a 7 (pedidos ainda não entregues)
+   `{"operands":[{"operator":"isAnyOf","operands":["fldBIfAlemFpuuo3b",["selayNJjucgfO6jgj","sela8tfpLZIN7Il5a","selqs5qw6KhuSctFF","selm6UHsmUWkZaiBD"]]}]}`
    e `fieldIds` exatamente:
    `["fldZWGWvGg0Y7wdua","fldl9gG0SvY5lmnpe","fldXtzo8xOSC6gLsZ","fldBIfAlemFpuuo3b","fldWOPjPp3z3ge1gm","fldQNRLwkpIpeTG9w","fld9IU7JhtIHNA3k7","flddTylMfbOi6AsO5","fld50dK0oYiJZ8dts","fldto6lJU9MzZUgjk","fldjrkqdry27k7mWl"]`.
    Destino: `data/operacoes/pedidos1.json`.
-2. **Compras** · `list_records_for_table` na tabela Compras, `pageSize` 1000, filtro (pedido ligado e sem data da compra)
-   `{"operands":[{"operator":"isNotEmpty","operands":["fldDpEA16hbhPKYx9"]},{"operator":"isEmpty","operands":["flduEqt3bOWhk6nH2"]}]}`
+2. **Compras** · junte os IDs de registro (`rec...`) do campo `fldto6lJU9MzZUgjk` de todos os pedidos do passo 1. Se não houver nenhum, grave `{"records":[]}` em `data/operacoes/compras1.json` e pule para o passo 3. Senão, `list_records_for_table` na tabela Compras com `recordIds` = essa lista (até 100 por chamada; mais que isso, divida em `compras2.json`…), `pageSize` 1000, filtro (sem data da compra)
+   `{"operands":[{"operator":"isEmpty","operands":["flduEqt3bOWhk6nH2"]}]}`
    e `fieldIds` exatamente:
    `["fldAm6AXk5HTkdM3M","fldDpEA16hbhPKYx9","fldR3cLHsmnRyZTPM","fldyATyl5Wey2xoXa","fldfsaidVlL4aRXq2","flduEqt3bOWhk6nH2","fld2r7Bk9WvVLvWjW"]`.
    Destino: `data/operacoes/compras1.json`.
@@ -32,7 +32,7 @@ Crie a pasta com `mkdir -p data/operacoes`. Em cada consulta, a resposta grande 
 6. Resuma em 1–2 linhas: a linha `ok:` do script e os destinatários.
 
 ## Regras aplicadas pelo script (referência)
-- Universo: todos os pedidos nos estágios "4. Sinal pago" a "10. Pagamento final realizado". Ficam de fora "0. Proposta criada", "1. Proposta enviada", "2. Combatendo objeções", "3. Venda concluída" e "11. Perdido".
+- Universo: todos os pedidos de "4. Sinal pago" a "7. Produção finalizada". Os estágios 8, 9 e 10 já foram entregues e não entram em nenhuma frente, por isso nem são consultados. Ficam de fora "0. Proposta criada", "1. Proposta enviada", "2. Combatendo objeções", "3. Venda concluída" e "11. Perdido".
 - Urgência pela "[ Preencher ] Data desejada da Entrega do pedido", contada a partir do dia do envio: alta até 7 dias (inclui datas vencidas), moderada de 8 a 15 dias, baixa a partir de 16 dias. Sem data: faixa própria, com pedido para preencher.
 - **Comprar**: linhas de Compras sem "[ Preencher ] Data que a compra foi realizada", ligadas a pedidos em "4. Sinal pago" ou "5. Compra de insumos para produção". Agrupadas por pedido, com botão para cada linha de compra e para o pedido.
 - **Produzir**: pedidos em "6. Produção iniciada" ou "7. Produção finalizada" com "[ Autocomplete ] Data do Pagamento do Sinal ou Valor Cheio deste Pedido" preenchida.
