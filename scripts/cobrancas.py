@@ -5,8 +5,9 @@ Uso: python3 scripts/cobrancas.py <pedidos.json> [--saida data/pagamento/cobranc
 Gera <saida> com os lotes prontos para update_records_for_table (até 50 por lote) e os protegidos.
 
 Regras, da mais forte para a mais fraca:
-1. Status da Cobrança do Saldo "Pago": nunca mexe no pedido.
-2. Estágio "11. Perdido", a não ser que o Status da Cobrança do Sinal/Valor cheio seja "Pago" (aí não mexe):
+1. Status da Cobrança do Saldo "Pago": não mexe nas cobranças (no estágio 11 só grava a forma de pagamento, regra 2).
+2. Estágio "11. Perdido": "Como esse pedido será pago" vira "O Contato do Pedido desistiu" (sempre, mesmo com
+   cobrança paga). E, a não ser que o Status da Cobrança do Sinal/Valor cheio seja "Pago" (aí não mexe nas cobranças):
    "Pedido perdido, campo desnecessário" nos 6 campos do Sinal/Valor cheio e nos 6 do Saldo.
    A Data do Pagamento do Sinal é campo de data e não recebe texto: fica como está.
 3. Fora do estágio 11, cobrança do saldo já pedida ou emitida (Emitir = "Sim, emitir agora", Status "Pendente",
@@ -34,6 +35,7 @@ SALDO = (F_EMITIR, F_METODO, F_URL, F_STATUS, F_LINK, F_ORDER)
 
 AGUARDANDO, SEM_COBRANCA = "Aguardando para emitir", "Não há necessidade de emitir cobrança"
 PERDIDO = "Pedido perdido, campo desnecessário"
+DESISTIU = "O Contato do Pedido desistiu"
 URL_SEM_COBRANCA = "https://nao-ha-cobranca.local"
 METODOS_REAIS = {"Link de pagamento", "Boleto", "PIX"}
 MARCADORES = {AGUARDANDO, SEM_COBRANCA, PERDIDO, "A definir", "Não há necessidade", "Sem cobrança criada"}
@@ -73,12 +75,12 @@ def desejado_saldo(v):
 
 def plano(v):
     """(campos a gravar, motivo de proteção)."""
+    if texto(v.get(F_EST)).startswith("11."):
+        if texto(v.get(F_STATUS)) == "Pago" or texto(v.get(S_STATUS)) == "Pago":
+            return {F_FORMA: DESISTIU}, "cobrança paga"
+        return {F_FORMA: DESISTIU, **{f: PERDIDO for f in SINAL + SALDO}}, None
     if texto(v.get(F_STATUS)) == "Pago":
         return {}, "cobrança paga"
-    if texto(v.get(F_EST)).startswith("11."):
-        if texto(v.get(S_STATUS)) == "Pago":
-            return {}, "cobrança paga"
-        return {f: PERDIDO for f in SINAL + SALDO}, None
     # Fora do estágio 11: limpa sobras de "Pedido perdido" (pedido reaberto)
     alvo = {f: None for f in SINAL + SALDO if texto(v.get(f)) == PERDIDO}
     saldo = desejado_saldo(v)
@@ -103,7 +105,8 @@ def main():
             protegidos.append(f"P{v.get(F_ID)} {texto(v.get(F_EST))[:3].strip()} {texto(v.get(F_FORMA))}: {motivo}")
         if mudar:
             perdido = texto(v.get(F_EST)).startswith("11.")
-            sobrescreve = [f for f in mudar if perdido and texto(v.get(f)) not in MARCADORES | {"", URL_SEM_COBRANCA}]
+            sobrescreve = [f for f in mudar if perdido and f != F_FORMA
+                           and texto(v.get(f)) not in MARCADORES | {"", URL_SEM_COBRANCA}]
             updates.append({"id": r["id"], "fields": mudar, "resumo": f"P{v.get(F_ID)} "
                             + ("perdido" if perdido else texto(v.get(F_FORMA)) or "reaberto")
                             + (f" (sobrescreveu {len(sobrescreve)} campos com valor real)" if sobrescreve else "")})
