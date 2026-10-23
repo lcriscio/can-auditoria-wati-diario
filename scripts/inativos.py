@@ -2,7 +2,7 @@
 
 Uso: python3 scripts/inativos.py <pedidos.json> [--dias 15] [--saida data/pagamento/inativos.json]
 <pedidos.json> é a resposta crua do list_records_for_table da tabela Pedidos (a mesma do passo 1 do roteiro).
-Regra fixa, sem IA: pedido nos estágios 0 a 3, com "Sinal + Saldo" ou "Valor cheio", sem cobrança do Sinal/Valor cheio
+Regra fixa, sem IA: pedido nos estágios 0 a 3, com "Sinal + Saldo", "Valor cheio" ou "Em definição", sem cobrança do Sinal/Valor cheio
 paga e cuja última mensagem do contato na WATI (não da equipe nem de automação) tem mais de <dias> dias, ou que não
 tem mensagem do contato: "Como esse pedido será pago" vira "Sem indicativo". O percentual não é mexido.
 Somente leitura na WATI (GET). Gera <saida> com os lotes prontos para update_records_for_table (até 50 por lote).
@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from pagamento import TZ, F_EST, F_FONE, F_FORMA, F_ID, digitos, hora_local, mensagens, quem
 
 S_STATUS = "fldmAdlGqtAXP55IQ"
-FORMAS = {"Sinal + Saldo", "Valor cheio"}
+FORMAS = {"Sinal + Saldo", "Valor cheio", "Em definição"}
 ESTAGIOS = ("0.", "1.", "2.", "3.")
 
 

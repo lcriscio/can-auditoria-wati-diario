@@ -29,7 +29,7 @@ Base `appza7P3RBl5OYQZv`.
 4. Pedido que saiu do estágio 11: o script limpa o "Pedido perdido, campo desnecessário" que sobrou. O "O Contato do Pedido desistiu" que sobrou é revisto por você no passo 4 (o pedido aparece com `novidade=nao`).
 
 ## Regra fixa de inatividade (aplicada pelo script `inativos.py`, não decida você)
-Pedido nos estágios 0 a 3 com "Sinal + Saldo" ou "Valor cheio", sem cobrança do Sinal/Valor cheio paga, cujo contato não manda mensagem na WATI há mais de 15 dias: Como será pago volta para "Sem indicativo". O percentual fica como está. Pedido com sinal pago (estágio 4 em diante) não volta.
+Pedido nos estágios 0 a 3 com "Sinal + Saldo", "Valor cheio" ou "Em definição", sem cobrança do Sinal/Valor cheio paga, cujo contato não manda mensagem na WATI há mais de 15 dias: Como será pago volta para "Sem indicativo". O percentual fica como está. Pedido com sinal pago (estágio 4 em diante) não volta.
 
 ## Passos
 1. Leia o Airtable (se falhar, encerre informando o erro em uma frase):
