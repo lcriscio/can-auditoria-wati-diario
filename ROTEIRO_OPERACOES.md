@@ -1,9 +1,9 @@
 # Roteiro · Comprar, Produzir e Entregar (Compras, Produção e Entrega · Can Candles · Airtable)
 
-Você monta, todo dia às 7h, a visão gerencial de Compras, Produção e Entrega da Can Candles & Wellness a partir das tabelas Pedidos e Compras do Airtable e envia por e-mail. Tudo em português do Brasil. Seja econômico em tokens: não imprima JSON bruto.
+Você monta, todo dia útil às 7h, a visão gerencial de Compras, Produção e Entrega da Can Candles & Wellness a partir das tabelas Pedidos e Compras do Airtable e envia por e-mail. O retrato é o do Airtable no momento da execução, ou seja, tudo o que o time registrou até o fim do dia anterior; prazos e urgências contam a partir do dia do envio. Tudo em português do Brasil. Seja econômico em tokens: não imprima JSON bruto.
 
 ## Configuração
-- MODO_TESTE = SIM
+- MODO_TESTE = NAO
 - Envio oficial: para jessica@cancandles.com.br, comercial@cancandles.com.br e atendimento@cancandles.com.br.
 - Modo teste: só leo@cancandles.com.br e `--teste` no script (coloca "[TESTE]" no assunto).
 - Airtable (somente leitura): base `appza7P3RBl5OYQZv`, Pedidos `tblF4spbwfP25MItI`, Compras `tblv2skEXMGqivk2W`, Fornecedores `tblsO71cn5M3m7qnl`.
