@@ -167,7 +167,7 @@ def prazo(p, hoje):
         return (f'A data desejada de entrega ({dt(d)}) já passou: alinhe uma nova data com o cliente e atualize '
                 '"[ Preencher ] Data desejada da Entrega do pedido".')
     if n <= 3:
-        return f'Entrega {faltam(d, hoje)}: é prioridade do dia. Confirme prazos com fornecedores e, se não fechar, avise o cliente já.'
+        return f'Entrega {faltam(d, hoje)}: é prioridade do dia. Confirme os prazos (insumos e produção) e, se não fechar, avise o cliente já.'
     return ""
 
 
