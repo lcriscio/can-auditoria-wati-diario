@@ -355,10 +355,11 @@ def main():
         return (f'<td width="33%" bgcolor="{TINTA[cor]}" style="background:{TINTA[cor]};border-radius:8px;padding:12px 6px;text-align:center">'
                 f'<div style="font-size:24px;font-weight:bold;color:{cor}">{v}</div><div style="font-size:12px;color:#3B2A22">{rot}</div></td>')
     alta = lambda g: sum(1 for p in g if urgencia(p["entrega"], hoje) == "alta")
+    rot_comprar = f"🛒 pedidos a comprar<br>({plural(n_itens, 'item')} · {alta(g1)} urgentes)"
     H.append('<div style="padding:16px 20px 4px"><p style="margin:0 0 12px">Bom dia, time! Este é o mapa do que precisa andar hoje nos pedidos já vendidos: '
              'o que comprar, o que produzir e o que entregar. Cada caso tem a ação recomendada e o botão que abre o registro no Airtable.</p>'
              '<table cellpadding="0" cellspacing="6" width="100%" style="border-collapse:separate"><tr>'
-             f'{cel(len(g1), f"🛒 pedidos a comprar<br>({plural(n_itens, "item")} · {alta(g1)} urgentes)", AMBAR)}'
+             f'{cel(len(g1), rot_comprar, AMBAR)}'
              f'{cel(len(g2), f"🕯️ pedidos a produzir<br>({alta(g2)} urgentes)", AZUL)}'
              f'{cel(len(g3), "🚚 entregas atrasadas<br>(data já passou)", VERMELHO)}</tr></table>'
              + (f'<p style="margin:8px 0 0;font-size:13px">⚠️ <b>{plural(len(atencao), "ponto")} de atenção</b> no CRM no fim do e-mail.</p>' if atencao else "")
