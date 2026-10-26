@@ -13,13 +13,15 @@ Liga cada contato que chega pelo WATI ao clique do site que o originou, sem depe
 
 O cenário da Make que associa por horário (5326283) continua como reserva para quem apagar o número.
 
-## Instalação no WordPress
+## Instalação no WordPress (feita em 26/10/2026)
 
-1. Snippets → Adicionar novo → tipo **HTML**, local **rodapé do site (footer)**, em todas as páginas.
-2. Colar `<script>` + conteúdo de `whatsapp-atendimento.js` + `</script>`.
-3. Desativar o snippet antigo de tracking do WhatsApp (o que chama o mesmo webhook), senão cada clique conta duas vezes.
-4. LiteSpeed Cache → Limpar todo o cache.
-5. Ligar a *Automação P* no Airtable.
+- Snippet **#12 "Tracking WhatsApp com nº de atendimento → Make"** (Code Snippets, PHP global, `wp_footer`):
+  `<script>` com o conteúdo de `whatsapp-atendimento.js`. Para atualizar, trocar o código desse snippet.
+- Snippet **#8 "Wordpress <> MAKE, mandar para Webhook"** desativado (não apagado). Ele só rastreava
+  links com a classe `.btn-wpp` (o botão flutuante) e enviava via Google Apps Script; os botões do
+  Elementor em /identidade-olfativa/ ficavam sem rastreio.
+- Depois de mudar o snippet, limpar o cache do LiteSpeed (as páginas ficam 7 dias em cache).
+- A origem segue a mesma regra do snippet #8, aplicada à página de entrada da visita.
 
 ## Teste
 

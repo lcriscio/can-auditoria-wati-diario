@@ -13,8 +13,8 @@
   var WEBHOOK = 'https://hook.us2.make.com/aqmle7pbbm5hkce6vbomhvi1lm9rhrc7';
   var MENSAGEM_PADRAO = 'Ol\u00e1! Gostaria de saber mais sobre o servi\u00e7o de Identidade Olfativa';
   var CHAVE = 'can_origem_visita';
-  var UTMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
-  var IDS_PAGOS = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'ttclid', 'li_fat_id'];
+  var PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content',
+    'gclid', 'gbraid', 'wbraid', 'gad_source', 'gad_campaignid'];
 
   function ler() {
     try { return JSON.parse(sessionStorage.getItem(CHAVE)); } catch (e) { return null; }
@@ -25,45 +25,55 @@
   }
 
   // Guarda a origem da visita: a primeira página, ou a página que chegou com uma campanha nova.
+  // Assim quem entra por um anúncio e clica no WhatsApp em outra página continua como "Paga".
   function registrarEntrada() {
     var params = new URLSearchParams(location.search);
-    var temCampanha = UTMS.some(function (k) { return params.get(k); }) ||
-      IDS_PAGOS.some(function (k) { return params.get(k); });
+    var temCampanha = PARAMS.some(function (k) { return params.get(k); });
     if (ler() && !temCampanha) return;
     var v = { landing_page: location.href, referrer: document.referrer || '' };
-    UTMS.concat(IDS_PAGOS).forEach(function (k) { v[k] = params.get(k) || ''; });
+    PARAMS.forEach(function (k) { v[k] = params.get(k) || ''; });
     gravar(v);
   }
 
-  function hostDe(url) {
-    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
-  }
-
+  // Mesma regra do snippet anterior ("Wordpress <> MAKE, mandar para Webhook"),
+  // aplicada à página de entrada da visita.
   function classificar(v) {
-    var medium = (v.utm_medium || '').toLowerCase();
-    var pago = IDS_PAGOS.some(function (k) { return v[k]; }) ||
-      /cpc|ppc|paid|ads|display|cpm|cpv/.test(medium);
-    if (pago) return 'Paga';
-    if (v.utm_source) return /referral|parceiro|afiliado/.test(medium) ? 'Referral' : 'Org\u00e2nica';
-    var ref = hostDe(v.referrer);
-    if (!ref || ref === location.hostname.replace(/^www\./, '')) return 'Direta';
-    if (/google\.|bing\.|yahoo\.|duckduckgo\.|ecosia\.|instagram\.|facebook\.|linkedin\.|t\.co$|pinterest\.|youtube\./.test(ref)) return 'Org\u00e2nica';
-    return 'Referral';
+    var utmMedium = v.utm_medium || '';
+    var r = { source: '', medium: '', campaign: '', categoria: '' };
+
+    if (v.gclid || v.gbraid || v.wbraid || v.gad_source || v.gad_campaignid) {
+      r = { source: 'google', medium: 'cpc', campaign: v.utm_campaign || v.gad_campaignid || 'google-ads-auto', categoria: 'Paga' };
+    } else if (utmMedium && ['cpc', 'paid', 'ppc', 'paid_social', 'paid-social', 'ads', 'pago'].indexOf(utmMedium.toLowerCase()) >= 0) {
+      r = { source: v.utm_source || '', medium: utmMedium, campaign: v.utm_campaign || '', categoria: 'Paga' };
+    } else if (v.utm_source || utmMedium || v.utm_campaign) {
+      var m = utmMedium.toLowerCase();
+      r = { source: v.utm_source || '', medium: utmMedium || 'referral', campaign: v.utm_campaign || '',
+        categoria: m === 'organic' ? 'Org\u00e2nica' : m === 'direto' ? 'Direta' : 'Referral' };
+    } else if (/google\.|bing\.|yahoo\.|duckduckgo\.|baidu\./i.test(v.referrer)) {
+      r = { source: 'google', medium: 'organic', campaign: 'organic-search', categoria: 'Org\u00e2nica' };
+    } else if (v.referrer && v.referrer.indexOf(location.hostname) < 0) {
+      var host = 'referral';
+      try { host = new URL(v.referrer).hostname; } catch (e) {}
+      r = { source: host, medium: 'referral', campaign: 'referral', categoria: 'Referral' };
+    } else {
+      r.categoria = 'Direta';
+    }
+
+    if (r.categoria === 'Direta') r.source = r.medium = r.campaign = 'direto';
+    return r;
   }
 
   function payload(numero) {
     var v = ler() || { landing_page: location.href, referrer: document.referrer || '' };
-    var categoria = classificar(v);
-    var ref = hostDe(v.referrer);
-    var direto = categoria === 'Direta';
+    var o = classificar(v);
     return {
       atendimento_id: numero,
       canal_conversao: 'WhatsApp',
       status_tracking: 'pendente',
-      origem_categoria: categoria,
-      utm_source: v.utm_source || (direto ? 'direto' : ref || (v.gclid || v.gbraid || v.wbraid ? 'google' : '')),
-      utm_medium: v.utm_medium || (direto ? 'direto' : ref ? 'referral' : ''),
-      utm_campaign: v.utm_campaign || (direto ? 'direto' : ''),
+      origem_categoria: o.categoria,
+      utm_source: o.source,
+      utm_medium: o.medium,
+      utm_campaign: o.campaign,
       utm_content: v.utm_content || '',
       landing_page: v.landing_page,
       pagina_clique: location.href
